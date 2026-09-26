@@ -19,15 +19,15 @@
 ## 🛠️ Stack
 | Camada | Tecnologia | Versão registrada |
 |---|---|---|
-| Back-end | Java LTS + Spring Boot + Maven | [registrar na aula 03] |
-| Front-end | React + TypeScript + Vite + Material UI | [registrar na aula 09] |
-| Banco de dados | [PostgreSQL ou similar] | [registrar na aula 04] |
-| DevOps | Git + Docker + Docker Compose + CI ([GitHub Actions/GitLab CI]) | [registrar na aula 13] |
+| Back-end | Java 21 + Spring Boot 4.1.1 + Maven [versão do ./mvnw -v] (Apache Maven 3.9.16) | JDK 25.0.1 usado no laboratório; o projeto compila para Java 21 |
+| Banco de dados | H2 2.4.240 (desenvolvimento) · PostgreSQL | PostgreSQL: [registrar na aula 04] |
+| Migrations | Flyway (starter do Spring Boot) | 12.4.0 |
+| Documentação da API | springdoc-openapi | 3.1.0 |
 
 > As versões são registradas no início do semestre e só mudam com decisão da equipe documentada.
 
 ## 🚀 Como executar
-> _Seção preenchida a partir da aula 03. Enquanto isso, nada roda aqui ainda._
+**Pré-requisitos:** JDK 21 ou superior. Não é preciso instalar o Maven: o `./mvnw` baixa a versão certa. Node.js e Docker entram nas próximas etapas.
 
 **Pré-requisitos:** [JDK LTS, Maven Wrapper, Node.js, Docker…]
 
@@ -40,6 +40,11 @@ cd backend
 cd frontend
 npm install
 npm run dev
+
+Com o back-end rodando:
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- OpenAPI (JSON): http://localhost:8080/api-docs
+- Console do H2: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:mem:socialconnectdb`, usuário `sa`, senha vazia)
 ```
 
 ## 🌿 Fluxo de trabalho Git
@@ -63,7 +68,7 @@ _Consultar a seção Working agreement acima. A definição evolui nas retrospec
 ## 🤖 Uso responsável de IA generativa
 Este projeto pode utilizar IA generativa **como apoio**, seguindo as regras da disciplina:
 - Toda contribuição relevante de IA é **declarada** na descrição do PR;
-- Prompts significativos são registrados em `docs/extensao/AI_USAGE.md` (data, ferramenta, prompt, como a saída foi validada);
+- Prompts significativos são registrados em `AI_USAGE.md` (data, ferramenta, prompt, como a saída foi validada);
 - Saídas de IA **não são confiadas cegamente**: passam por revisão, testes e verificação de segurança antes do merge.
 
 ## 📚 Documentação e referências
