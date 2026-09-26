@@ -1,0 +1,645 @@
+openapi: 3.1.0
+info:
+  title: SocialConnect API
+  description: API RESTful de gestão para instituições sociais (Disciplina - Tópicos Especiais em Sistemas para Internet III).
+  version: 0.5.0
+  contact:
+    name: Prof. James Campos
+    email: james.campos@cps.sp.gov.br
+
+servers:
+  - url: http://localhost:8080
+    description: Servidor de Desenvolvimento Local
+
+tags:
+  - name: Beneficiários
+    description: Gestão de beneficiários
+  - name: Doações
+    description: Gestão de doações
+  - name: Doadores
+    description: Gestão de doadores
+  - name: Produtos
+    description: Gestão de produtos
+
+paths:
+  /api/v1/beneficiarios:
+    get:
+      tags:
+        - Beneficiários
+      summary: Lista beneficiários com paginação e filtros
+      operationId: listarBeneficiarios
+      parameters:
+        - name: nome
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: cpf
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista paginada de beneficiários
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageBeneficiarioResponse'
+        '400':
+          description: Parâmetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    post:
+      tags:
+        - Beneficiários
+      summary: Cria um novo beneficiário
+      operationId: criarBeneficiario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeneficiarioRequest'
+      responses:
+        '201':
+          description: Beneficiário criado com sucesso
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BeneficiarioResponse'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: CPF já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/beneficiarios/{id_beneficiario}:
+    get:
+      tags:
+        - Beneficiários
+      summary: Busca um beneficiário por ID
+      operationId: buscarBeneficiarioPorId
+      parameters:
+        - name: id_beneficiario
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Dados do beneficiário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BeneficiarioResponse'
+        '404':
+          description: Beneficiário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    put:
+      tags:
+        - Beneficiários
+      summary: Atualiza um beneficiário (substituição total)
+      operationId: atualizarBeneficiario
+      parameters:
+        - name: id_beneficiario
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeneficiarioRequest'
+      responses:
+        '200':
+          description: Beneficiário atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BeneficiarioResponse'
+        '404':
+          description: Beneficiário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    patch:
+      tags:
+        - Beneficiários
+      summary: Atualiza parcialmente um beneficiário
+      operationId: atualizarParcialmenteBeneficiario
+      parameters:
+        - name: id_beneficiario
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeneficiarioPatch'
+      responses:
+        '200':
+          description: Beneficiário atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BeneficiarioResponse'
+        '404':
+          description: Beneficiário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    delete:
+      tags:
+        - Beneficiários
+      summary: Remove um beneficiário
+      operationId: deletarBeneficiario
+      parameters:
+        - name: id_beneficiario
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Beneficiário removido com sucesso
+        '404':
+          description: Beneficiário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/doacoes:
+    get:
+      tags:
+        - Doações
+      summary: Lista doações com paginação e filtros
+      operationId: listarDoacoes
+      parameters:
+        - name: dataInicio
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: dataFim
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: tipo
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TipoDoacao'
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista paginada de doações
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageDoacaoResponse'
+        '400':
+          description: Parâmetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    post:
+      tags:
+        - Doações
+      summary: Registra uma nova doação
+      operationId: criarDoacao
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoacaoRequest'
+      responses:
+        '201':
+          description: Doação registrada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoacaoResponse'
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/doadores:
+    get:
+      tags:
+        - Doadores
+      summary: Lista doadores com paginação
+      operationId: listarDoadores
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Lista paginada de doadores
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageDoadorResponse'
+    post:
+      tags:
+        - Doadores
+      summary: Cria um novo doador
+      operationId: criarDoador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoadorRequest'
+      responses:
+        '201':
+          description: Doador criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoadorResponse'
+
+  /api/v1/produtos:
+    get:
+      tags:
+        - Produtos
+      summary: Lista produtos com paginação
+      operationId: listarProdutos
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Lista paginada de produtos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProdutoResponse'
+    post:
+      tags:
+        - Produtos
+      summary: Cria um novo produto
+      operationId: criarProduto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProdutoRequest'
+      responses:
+        '201':
+          description: Produto criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProdutoResponse'
+
+components:
+  schemas:
+    BeneficiarioRequest:
+      type: object
+      required:
+        - nome
+        - cpf
+      properties:
+        nome:
+          type: string
+          maxLength: 150
+        cpf:
+          type: string
+          pattern: ^\d{11}$|^\d{14}$
+        telefone:
+          type: string
+          maxLength: 20
+        endereco:
+          type: string
+          maxLength: 255
+        situacao_vulnerabilidade:
+          type: string
+          maxLength: 500
+
+    BeneficiarioResponse:
+      type: object
+      properties:
+        id_beneficiario:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        cpf:
+          type: string
+        telefone:
+          type: string
+        endereco:
+          type: string
+        situacao_vulnerabilidade:
+          type: string
+        data_cadastro:
+          type: string
+          format: date
+
+    BeneficiarioPatch:
+      type: object
+      properties:
+        nome:
+          type: string
+          maxLength: 150
+        telefone:
+          type: string
+          maxLength: 20
+        endereco:
+          type: string
+          maxLength: 255
+        situacao_vulnerabilidade:
+          type: string
+          maxLength: 500
+
+    PageBeneficiarioResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/BeneficiarioResponse'
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
+
+    TipoDoacao:
+      type: string
+      enum:
+        - ALIMENTO
+        - ROUPA
+        - FINANCEIRA
+
+    DoacaoRequest:
+      type: object
+      required:
+        - id_doador
+        - data_doacao
+        - tipo
+      properties:
+        id_doador:
+          type: integer
+          format: int64
+        data_doacao:
+          type: string
+          format: date
+        valor:
+          type: number
+          format: decimal
+        tipo:
+          $ref: '#/components/schemas/TipoDoacao'
+        descricao:
+          type: string
+          maxLength: 500
+
+    DoacaoResponse:
+      type: object
+      properties:
+        id_doacao:
+          type: integer
+          format: int64
+        id_doador:
+          type: integer
+          format: int64
+        data_doacao:
+          type: string
+          format: date
+        valor:
+          type: number
+          format: decimal
+        tipo:
+          $ref: '#/components/schemas/TipoDoacao'
+
+    PageDoacaoResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/DoacaoResponse'
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+
+    TipoDoador:
+      type: string
+      enum:
+        - PESSOA_FISICA
+        - PESSOA_JURIDICA
+
+    DoadorRequest:
+      type: object
+      required:
+        - nome
+        - tipo
+      properties:
+        nome:
+          type: string
+          maxLength: 200
+        tipo:
+          $ref: '#/components/schemas/TipoDoador'
+        email:
+          type: string
+          format: email
+        telefone:
+          type: string
+          maxLength: 20
+
+    DoadorResponse:
+      type: object
+      properties:
+        id_doador:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/TipoDoador'
+        email:
+          type: string
+        telefone:
+          type: string
+
+    PageDoadorResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/DoadorResponse'
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+
+    CategoriaProduto:
+      type: string
+      enum:
+        - ALIMENTO
+        - ROUPA
+        - HIGIENE
+        - OUTROS
+
+    ProdutoRequest:
+      type: object
+      required:
+        - nome
+        - categoria
+        - estoque_minimo
+      properties:
+        nome:
+          type: string
+          maxLength: 150
+        categoria:
+          $ref: '#/components/schemas/CategoriaProduto'
+        estoque_minimo:
+          type: integer
+          minimum: 0
+        unidade_medida:
+          type: string
+          maxLength: 20
+
+    ProdutoResponse:
+      type: object
+      properties:
+        id_produto:
+          type: integer
+          format: int64
+        nome:
+          type: string
+        categoria:
+          $ref: '#/components/schemas/CategoriaProduto'
+        estoque_atual:
+          type: integer
+        estoque_minimo:
+          type: integer
+        unidade_medida:
+          type: string
+
+    ProblemDetail:
+      type: object
+      description: Estrutura padronizada para erros (RFC 7807)
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri
+        timestamp:
+          type: string
+          format: date-time
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
