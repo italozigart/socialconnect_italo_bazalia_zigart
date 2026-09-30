@@ -3,11 +3,12 @@ package br.com.socialconnect.api.beneficiarios.dto;
 import java.time.LocalDate;
 
 /**
- * Dados que entram e saem da API, separados da Entity.
+ * Dados que a API devolve em todas as respostas de beneficiário.
+ * Inclui os campos gerados pelo servidor: idBeneficiario (pelo banco) e
+ * dataCadastro (pelo BeneficiarioService, no cadastro).
  * Record não tem getters: o acesso é dto.nome(), e não dto.getNome().
- * Na Etapa 3 este DTO se divide em Request, Response e Patch.
  */
-public record BeneficiarioDTO(
+public record BeneficiarioResponseDTO(
         Long idBeneficiario,
         String nome,
         String cpf,
