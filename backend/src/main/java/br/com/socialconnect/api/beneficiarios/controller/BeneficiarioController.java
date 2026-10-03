@@ -4,6 +4,7 @@ import br.com.socialconnect.api.beneficiarios.dto.BeneficiarioPatchDTO;
 import br.com.socialconnect.api.beneficiarios.dto.BeneficiarioRequestDTO;
 import br.com.socialconnect.api.beneficiarios.dto.BeneficiarioResponseDTO;
 import br.com.socialconnect.api.beneficiarios.service.BeneficiarioService;
+import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -60,8 +61,12 @@ public class BeneficiarioController {
 
     // 201 Created + Location: o recurso novo ganha endereço próprio.
     // Sem o @RequestBody, os campos do JSON chegariam nulos.
+    // @Valid: aplica as anotações do DTO antes de chamar o Service. Se algum
+    // campo falhar, o Spring lança MethodArgumentNotValidException e o
+    // GlobalExceptionHandler responde 400 com a lista de campos. Sem o @Valid,
+    // as anotações do DTO são ignoradas.
     @PostMapping
-    public ResponseEntity<BeneficiarioResponseDTO> criar(@RequestBody BeneficiarioRequestDTO dto) {
+    public ResponseEntity<BeneficiarioResponseDTO> criar(@Valid @RequestBody BeneficiarioRequestDTO dto) {
         BeneficiarioResponseDTO criado = service.criar(dto);
         URI location = URI.create("/api/v1/beneficiarios/" + criado.idBeneficiario());
         return ResponseEntity.created(location).body(criado);
@@ -72,7 +77,7 @@ public class BeneficiarioController {
     @PutMapping("/{idBeneficiario}")
     public ResponseEntity<BeneficiarioResponseDTO> atualizar(
             @PathVariable("idBeneficiario") Long idBeneficiario,
-            @RequestBody BeneficiarioRequestDTO dto) {
+            @Valid @RequestBody BeneficiarioRequestDTO dto) {
         return ResponseEntity.ok(service.atualizar(idBeneficiario, dto));
     }
 
@@ -80,7 +85,7 @@ public class BeneficiarioController {
     @PatchMapping("/{idBeneficiario}")
     public ResponseEntity<BeneficiarioResponseDTO> atualizarParcial(
             @PathVariable("idBeneficiario") Long idBeneficiario,
-            @RequestBody BeneficiarioPatchDTO dto) {
+            @Valid @RequestBody BeneficiarioPatchDTO dto) {
         return ResponseEntity.ok(service.atualizarParcial(idBeneficiario, dto));
     }
 
