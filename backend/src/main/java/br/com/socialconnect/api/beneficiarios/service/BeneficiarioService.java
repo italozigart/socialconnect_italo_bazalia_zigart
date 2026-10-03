@@ -5,6 +5,8 @@ import br.com.socialconnect.api.beneficiarios.dto.BeneficiarioRequestDTO;
 import br.com.socialconnect.api.beneficiarios.dto.BeneficiarioResponseDTO;
 import br.com.socialconnect.api.beneficiarios.model.Beneficiario;
 import br.com.socialconnect.api.beneficiarios.repository.BeneficiarioRepository;
+import br.com.socialconnect.api.exception.CpfDuplicadoException;
+import br.com.socialconnect.api.exception.RecursoNaoEncontradoException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -48,12 +50,12 @@ public class BeneficiarioService {
     // @Transactional nos três métodos de escrita: a consulta e a gravação correm
     // na mesma transação. Isso não impede dois POSTs simultâneos com o mesmo CPF;
     // quem garante a unicidade é o UNIQUE da V1. O existsByCpf existe para a API
-    // devolver um erro próprio (409 na Etapa 4), e não o erro do banco.
+    // devolver um erro próprio (409), e não o erro do banco.
     @Transactional
     public BeneficiarioResponseDTO criar(BeneficiarioRequestDTO dto) {
-        // Por enquanto vira 500; na Etapa 4, CpfDuplicadoException e 409.
+        // O GlobalExceptionHandler transforma a CpfDuplicadoException em 409.
         if (repository.existsByCpf(dto.cpf())) {
-            throw new RuntimeException("CPF já cadastrado: " + dto.cpf());
+            throw new CpfDuplicadoException(dto.cpf());
         }
 
         // Sem idBeneficiario: com id nulo, o save faz persist (INSERT) e o banco
@@ -82,7 +84,7 @@ public class BeneficiarioService {
         // setCpf viesse antes, o UPDATE com o CPF repetido sairia primeiro e o
         // erro viria do UNIQUE, não desta verificação.
         if (repository.existsByCpfAndIdBeneficiarioNot(dto.cpf(), idBeneficiario)) {
-            throw new RuntimeException("CPF já cadastrado: " + dto.cpf());
+            throw new CpfDuplicadoException(dto.cpf());
         }
 
         beneficiario.setNome(dto.nome());
@@ -119,17 +121,20 @@ public class BeneficiarioService {
         return toResponseDTO(repository.save(beneficiario));
     }
 
+    // Busca antes de apagar: o deleteById ignora id inexistente, e o DELETE
+    // responderia 204 para um registro que nunca existiu. Assim dá 404.
+    // @Transactional: a busca e o DELETE correm na mesma transação.
+    @Transactional
     public void deletar(Long idBeneficiario) {
-        // deleteById ignora id inexistente: hoje isso responde 204 (tratar na Etapa 4).
-        repository.deleteById(idBeneficiario);
+        Beneficiario beneficiario = buscarEntidadePorId(idBeneficiario);
+        repository.delete(beneficiario);
     }
 
     // Usado por buscarPorId, atualizar e atualizarParcial.
-    // Por enquanto esta exceção vira 500; na Etapa 4 ela passa a responder 404.
+    // O GlobalExceptionHandler transforma a RecursoNaoEncontradoException em 404.
     private Beneficiario buscarEntidadePorId(Long idBeneficiario) {
         return repository.findById(idBeneficiario)
-                .orElseThrow(() -> new RuntimeException(
-                        "Beneficiário não encontrado com o ID: " + idBeneficiario));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Beneficiário", idBeneficiario));
     }
 
     private BeneficiarioResponseDTO toResponseDTO(Beneficiario entity) {

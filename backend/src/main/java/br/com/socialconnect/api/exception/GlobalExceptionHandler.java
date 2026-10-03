@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
 
     // ===================== Erros de negócio =====================
 
-    // 404: id inexistente no GET, PUT ou DELETE.
+    // 404: id inexistente no GET, PUT, PATCH ou DELETE.
     @ExceptionHandler(RecursoNaoEncontradoException.class)
     public ResponseEntity<ProblemDetail> tratarRecursoNaoEncontrado(RecursoNaoEncontradoException ex,
                                                                      HttpServletRequest request) {
@@ -65,6 +65,16 @@ public class GlobalExceptionHandler {
         return responder(HttpStatus.NOT_FOUND, "recurso-nao-encontrado",
                 mensagem("erro.recurso-nao-encontrado.titulo"),
                 mensagem("erro.recurso-nao-encontrado.detalhe", ex.getRecurso(), String.valueOf(ex.getId())),
+                request);
+    }
+
+    // 409: CPF já cadastrado em outro beneficiário (POST e PUT).
+    @ExceptionHandler(CpfDuplicadoException.class)
+    public ResponseEntity<ProblemDetail> tratarCpfDuplicado(CpfDuplicadoException ex,
+                                                            HttpServletRequest request) {
+        return responder(HttpStatus.CONFLICT, "cpf-duplicado",
+                mensagem("erro.cpf-duplicado.titulo"),
+                mensagem("erro.cpf-duplicado.detalhe", ex.getCpf()),
                 request);
     }
 
