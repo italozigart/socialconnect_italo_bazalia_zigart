@@ -16,7 +16,7 @@ Para cada aula ou entrega, registre abaixo:
 ## Acordo de uso neste projeto
 
 - A IA atua como tutora: explica conceitos, estrutura o roteiro de trabalho e revisa o que eu produzo.
-- Como regra, o código e os artefatos do repositório são escritos por mim. Quando uma saída da IA for copiada para o repositório, isso é declarado na linha da sessão, com o arquivo afetado e o que a IA alterou (casos: `application.properties`, sessão #10; código da Etapa 2, sessão #12; código da Etapa 3, sessão #14; código da A1, sessão #16, parte dele reaproveitada na Etapa 4, sessão #17).
+- Como regra, o código e os artefatos do repositório são escritos por mim. Quando uma saída da IA for copiada para o repositório, isso é declarado na linha da sessão, com o arquivo afetado e o que a IA alterou (casos: `application.properties`, sessão #10; código da Etapa 2, sessão #12; código da Etapa 3, sessão #14; código da A1, sessão #16, parte dele reaproveitada na Etapa 4, sessão #17; código da Etapa 4, sessão #18).
 - Todo alerta técnico vindo da IA é verificado na prática (log, teste ou documentação oficial) antes de virar decisão.
 - Este arquivo é organizado com apoio da IA a partir das sessões de orientação; o conteúdo das colunas "Uso da saída" e "Como validei" é confirmado por mim antes de cada commit.
 - Sessões curtas de suporte (dúvidas pontuais e erros de terminal) são agrupadas numa única linha, com os tópicos listados.
@@ -31,7 +31,7 @@ Para cada aula ou entrega, registre abaixo:
 | Etapa 2 — Beneficiário: primeira fatia vertical | #11 e #12 | Concluída: PR #11 mergeado em 28/09/2026, issue #4 fechada |
 | Etapa 3 — Beneficiário: CRUD completo e semântica HTTP | #13 e #14 | Concluída: PR #12 mergeado em 02/10/2026. Este registro ficou de fora do merge e entrou depois, no primeiro commit da branch da Etapa 4 |
 | A1 — Desafio prático individual (módulo de Produtos) | #16 | Entregue em 02/10/2026 na branch `avaliacao1` (PR #13 aberto, sem merge até a correção); declaração de IA no README da branch |
-| Etapa 4 — Beneficiário: validação, erros e i18n | #15 e #17 | Em andamento (issue #6), branch `feat/beneficiario-validacao-erros`; pausada em 02/10/2026 pela A1 e retomada em 03/10/2026 |
+| Etapa 4 — Beneficiário: validação, erros e i18n | #15, #17 e #18 | Concluída no PR com `Closes #6`: Bean Validation nos DTOs com `@Valid`, constraint `@CPF`, erros em Problem Details (400, 404, 409 e 500 genérico) e mensagens em pt-BR; infraestrutura de erros e i18n reaproveitada da A1 |
 
 ## Registro
 
@@ -54,6 +54,7 @@ Para cada aula ou entrega, registre abaixo:
 | 15 | 02/10/2026 | Etapa 4 (guia, issue #6) | Claude Opus 5.5 (claude.ai) | Pedir o guia da Etapa 4, com a Etapa 3 mergeada. | Guia em Partes A a G (registro da Etapa 3, Bean Validation nos DTOs, constraint `@CPF` com o cálculo feito por mim, exceções, `GlobalExceptionHandler` com Problem Details, locale pt-BR e testes finais), com armadilhas, checkpoints e perguntas de defesa. Para montar o guia, a IA consultou o meu repositório, a nota da Aula 06, o `docs/openapi.yaml`, o repositório do professor e o código-fonte do Spring Framework 7.0.9, do Spring Boot 4.1.1, do Spring Data 4.1.1, do Hibernate Validator 9.1.3 e do springdoc 3.1.0. A etapa foi pausada no mesmo dia por causa da A1 (sessão #16). | Em andamento: os alertas do guia são conferidos na execução das Partes B a G. |
 | 16 | 02/10/2026 | A1 (desafio prático individual, módulo de Produtos) | Claude Opus 5.5 (claude.ai) | Enviar o enunciado da A1 e pedir o levantamento do que criar; pedir que a IA codificasse tudo, cabendo a mim revisar, implementar e explicar o código na avaliação; avisar que o professor proibiu o Docker no meio da atividade; suporte para levar o projeto a outro PC do laboratório e conferir os testes (ver lista abaixo). | **Código da A1 copiado integralmente da resposta da IA** (22 arquivos, branch `avaliacao1`): migration `V2__create_produtos_table.sql`, `Produto`, `CategoriaProduto`, `ProdutoRepository`, DTOs com Bean Validation, a constraint `@UnidadeMedida`, as exceções, o `GlobalExceptionHandler` com Problem Details, `ProdutoService`/`ProdutoServiceImpl`, `ProdutoController` com Swagger, `messages.properties`, o locale pt-BR no `application.properties`, testes unitários e de integração e a seção da A1 no README. Depois da mudança do enunciado, a IA trocou o Testcontainers pelo H2 em memória nos testes de integração e tirou o `@Import(TestcontainersConfiguration.class)` do `ApiApplicationTests`. A declaração de uso de IA da A1 está no README da branch `avaliacao1`. Commits feitos por mim, um por camada. | Pela IA, antes da entrega: a V2 rodou num H2 2.4.240; as classes compilaram com os jars reais do Lombok, do Jakarta Validation e do Swagger, contra stubs das APIs do Spring; os testes unitários passaram com o Mockito real. Por mim, em 02/10/2026, no PC do laboratório: `./mvnw clean compile` com `BUILD SUCCESS`; `./mvnw test` com 11 testes passando (5 unitários, 5 de integração e o `contextLoads`); no Swagger, 201 com `Location` e `estoqueBaixo`, 409 para nome repetido sem diferenciar maiúsculas, 400 com a lista de campos inválidos, 400 para categoria inválida, 200 na listagem filtrada, 400 para `sort` inválido, 404 em id inexistente e 204 no DELETE. |
 | 17 | 03/10/2026 | Etapa 4 (retomada, issue #6) | Claude Opus 5.5 (claude.ai) | Perguntar o melhor caminho para retomar a Etapa 4 com a `avaliacao1` ainda sem correção; pedir o passo a passo das limpezas e dos comandos Git; enviar as respostas de defesa da Etapa 3 (ver lista abaixo). | Decisão minha, com base na análise da IA: criar a branch da Etapa 4 a partir da `main` e deixar a `avaliacao1` intocada até a correção. Por orientação da IA, trouxe da `avaliacao1` com `git restore --source=origin/avaliacao1` o `GlobalExceptionHandler`, o `ProblemDetail`, a `RecursoNaoEncontradoException`, o `messages.properties` e o bloco de locale do `application.properties` (código gerado pela IA na sessão #16), e removi os dois handlers e as chaves de Produtos (commit `44d1f74`). A IA apontou erros nas minhas primeiras respostas às perguntas 3, 5 e 6 da Etapa 3, e eu as reescrevi. Este arquivo foi reorganizado pela IA a partir das sessões #13 a #17 e revisado por mim. | `grep` sem nenhuma referência às classes e chaves de Produtos; `./mvnw clean compile` com `BUILD SUCCESS` (11 arquivos-fonte); branch enviada ao GitHub com `git push -u`. |
+| 18 | 03/10/2026 | Etapa 4 (código, issue #6) | Claude Opus 5.5 (claude.ai) | Perguntar o que faltava para concluir a Etapa 4 depois de trazer a infraestrutura da A1; pedir que a IA gerasse os arquivos, incluindo o cálculo do CPF; enviar os resultados dos testes para conferência (ver lista abaixo). | **Código da Etapa 4 copiado integralmente da resposta da IA:** `validation/CPF.java`, `validation/CpfValidator.java` (cálculo dos dígitos verificadores feito pela IA, e não por mim, como o roteiro previa), `exception/CpfDuplicadoException.java`, as anotações de Bean Validation no `BeneficiarioRequestDTO` e no `BeneficiarioPatchDTO`, o `@Valid` no `BeneficiarioController`, o handler de 409 no `GlobalExceptionHandler`, as exceções e o DELETE com busca prévia no `BeneficiarioService` e as chaves do Beneficiário no `messages.properties`. Molde: a `@UnidadeMedida`, a `NomeDuplicadoException` e o handler da A1, e a nota da Aula 06. Decisão registrada na `@CPF`: só 11 dígitos, sem máscara, para o banco não guardar o mesmo CPF de dois jeitos. Commits feitos por mim: `@CPF`, validação de entrada e erros 404/409. | Pela IA, antes da entrega: os DTOs, o validador e as exceções compilaram contra stubs do Jakarta Validation; o `CpfValidator` acertou 19 casos (os 7 CPFs do script de dados e o `12345678909` válidos; nulo e vazio aceitos; máscara, letras, tamanho errado, dígitos iguais e dígito trocado recusados). Service, Controller e handler não foram compilados pela IA. Por mim, em 03/10/2026: `./mvnw clean compile` com `BUILD SUCCESS` (14 arquivos-fonte); pelo Swagger e pelo navegador, com o script de dados: POST com nome vazio e CPF inválido → 400 com os dois campos em `errors`, em português; CPF com máscara → 400 só no `cpf`; CPF repetido no POST e no PUT `/4` → 409; GET, PUT, PATCH e DELETE em `/99` → 404; PUT `/2` sem nome → 400; PATCH `/3` com nome vazio → 400 e com `null` → 200 sem mudança; `/abc` → 400, `/beneficiarioss` → 404 e `sort=data_cadastro` → 400, todos em Problem Details; DELETE `/1` → 204 e o segundo → 404. No log: 409 sem INSERT nem UPDATE; PATCH com `null` só com SELECT, sem UPDATE; DELETE com SELECT e DELETE. `./mvnw test` não foi rodado: o `contextLoads` usa Testcontainers e o PC do laboratório não tem Docker. |
 
 ### Tópicos da sessão #8 (suporte)
 
@@ -116,6 +117,16 @@ Para cada aula ou entrega, registre abaixo:
 - Caractere invisível colado antes do `git` (`$'\302\203git': command not found`), resolvido digitando o comando.
 - Diferença entre `git commit` (repositório local, só neste PC) e `git push` (GitHub), e por que fazer push antes de sair do laboratório.
 - Experimentos pendentes da Etapa 3 (C4, F1 e G4) e linha de base B1 a B6: decidi não executar.
+
+### Tópicos da sessão #18 (Etapa 4, código)
+
+- O que faltava depois da infraestrutura da A1: validação nos DTOs, `@Valid`, `@CPF`, 409 do CPF, 404 no lugar das `RuntimeException` e DELETE com busca prévia.
+- PATCH enviado como `{"nome": "null"}`, com aspas: a API gravou o texto "null". O teste certo é o `null` do JSON, sem aspas, que não altera nada.
+- PUT `/99` com corpo inválido deu 400, e não 404: o `@Valid` roda antes de o Service procurar o id. Com corpo válido, deu 404.
+- `sort=data_cadastro`: o `detail` cita `"data"`, porque o Spring Data lê o `_` como navegação entre atributos e para no primeiro pedaço inexistente.
+- WARN do springdoc ao abrir o Swagger (`Json Processing Exception ... HashSet ... 'integer'`): não afeta as respostas; fica para a Etapa 5.
+- Erros de terminal: `git add` rodado dentro de `backend/` e nome de pasta digitado errado (`beneficarios`); uso do Tab para completar caminhos.
+- Anotado para a Etapa 5: o contrato aceita CPF com 14 caracteres (`\d{14}`) e não lista 400 nem 409 no PUT e no PATCH. Dois POSTs simultâneos com o mesmo CPF ainda passam pelo `existsByCpf`, e o segundo cai no UNIQUE com 500 genérico.
 
 ### Perguntas de defesa — Etapa 0 (respostas minhas)
 
@@ -239,6 +250,14 @@ Para cada aula ou entrega, registre abaixo:
 > Não posso deixar esses trechos? Afinal vou usá-los depois, o que acha?
 
 > Pular os experimentos (seguido das respostas às perguntas de defesa da Etapa 3)
+
+**#18 — 03/10/2026** — prompts principais abaixo; o envio dos resultados de teste está nos tópicos da sessão #18.
+
+> Mano to fazendo a Etapa 4, quero concluir logo, já peguei os códigos da AV1 o que falta?
+
+> Pode gerar
+
+> O do CPF fiz sim ta colado ai, e os dos /99 fiz todos, revise
 
 ---
 
