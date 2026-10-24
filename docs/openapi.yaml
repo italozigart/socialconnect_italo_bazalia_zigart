@@ -1,3 +1,11 @@
+# Contrato da SocialConnect API (base: repositório do professor).
+# Etapa 5 (issue #7): a parte de Beneficiários foi alinhada à API implementada.
+# - JSON em camelCase, como os records Java e os exemplos das Aulas 05 e 06
+#   (o prefixo id_ da disciplina vale para as colunas do banco).
+# - Parâmetro de caminho {idBeneficiario}; a URL continua /api/v1/beneficiarios/1.
+# - CPF só com 11 dígitos: ^\d{14}$ eram 14 dígitos, e não o CPF com máscara.
+# - Respostas 400 e 409 que faltavam. O 500 (erro inesperado) fica só no Swagger.
+# Doações, Doadores e Produtos mantêm o texto original até serem implementados.
 openapi: 3.1.0
 info:
   title: SocialConnect API
@@ -104,14 +112,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
-  /api/v1/beneficiarios/{id_beneficiario}:
+  /api/v1/beneficiarios/{idBeneficiario}:
     get:
       tags:
         - Beneficiários
       summary: Busca um beneficiário por ID
       operationId: buscarBeneficiarioPorId
       parameters:
-        - name: id_beneficiario
+        - name: idBeneficiario
           in: path
           required: true
           schema:
@@ -124,6 +132,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BeneficiarioResponse'
+        '400':
+          description: Id inválido (não numérico ou acima do limite)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '404':
           description: Beneficiário não encontrado
           content:
@@ -136,7 +150,7 @@ paths:
       summary: Atualiza um beneficiário (substituição total)
       operationId: atualizarBeneficiario
       parameters:
-        - name: id_beneficiario
+        - name: idBeneficiario
           in: path
           required: true
           schema:
@@ -155,8 +169,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BeneficiarioResponse'
+        '400':
+          description: Dados inválidos, JSON malformado ou id inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '404':
           description: Beneficiário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: Outro beneficiário já usa este CPF
           content:
             application/json:
               schema:
@@ -167,7 +193,7 @@ paths:
       summary: Atualiza parcialmente um beneficiário
       operationId: atualizarParcialmenteBeneficiario
       parameters:
-        - name: id_beneficiario
+        - name: idBeneficiario
           in: path
           required: true
           schema:
@@ -186,6 +212,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BeneficiarioResponse'
+        '400':
+          description: Dados inválidos, JSON malformado ou id inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '404':
           description: Beneficiário não encontrado
           content:
@@ -198,7 +230,7 @@ paths:
       summary: Remove um beneficiário
       operationId: deletarBeneficiario
       parameters:
-        - name: id_beneficiario
+        - name: idBeneficiario
           in: path
           required: true
           schema:
@@ -207,6 +239,12 @@ paths:
       responses:
         '204':
           description: Beneficiário removido com sucesso
+        '400':
+          description: Id inválido (não numérico ou acima do limite)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
         '404':
           description: Beneficiário não encontrado
           content:
@@ -397,21 +435,21 @@ components:
           maxLength: 150
         cpf:
           type: string
-          pattern: ^\d{11}$|^\d{14}$
+          pattern: ^\d{11}$
         telefone:
           type: string
           maxLength: 20
         endereco:
           type: string
           maxLength: 255
-        situacao_vulnerabilidade:
+        situacaoVulnerabilidade:
           type: string
           maxLength: 500
 
     BeneficiarioResponse:
       type: object
       properties:
-        id_beneficiario:
+        idBeneficiario:
           type: integer
           format: int64
         nome:
@@ -422,9 +460,9 @@ components:
           type: string
         endereco:
           type: string
-        situacao_vulnerabilidade:
+        situacaoVulnerabilidade:
           type: string
-        data_cadastro:
+        dataCadastro:
           type: string
           format: date
 
@@ -440,7 +478,7 @@ components:
         endereco:
           type: string
           maxLength: 255
-        situacao_vulnerabilidade:
+        situacaoVulnerabilidade:
           type: string
           maxLength: 500
 
@@ -642,4 +680,3 @@ components:
                 type: string
               message:
                 type: string
-
