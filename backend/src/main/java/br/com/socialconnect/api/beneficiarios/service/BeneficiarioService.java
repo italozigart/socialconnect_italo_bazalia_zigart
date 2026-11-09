@@ -7,6 +7,7 @@ import br.com.socialconnect.api.beneficiarios.model.Beneficiario;
 import br.com.socialconnect.api.beneficiarios.repository.BeneficiarioRepository;
 import br.com.socialconnect.api.exception.CpfDuplicadoException;
 import br.com.socialconnect.api.exception.RecursoNaoEncontradoException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -48,9 +49,10 @@ public class BeneficiarioService {
     }
 
     // @Transactional nos três métodos de escrita: a consulta e a gravação correm
-    // na mesma transação. Isso não impede dois POSTs simultâneos com o mesmo CPF;
-    // quem garante a unicidade é o UNIQUE da V1. O existsByCpf existe para a API
-    // devolver um erro próprio (409), e não o erro do banco.
+    // na mesma transação. O existsByCpf resolve o caso comum (409 sem tentar o
+    // INSERT), mas não impede dois POSTs simultâneos com o mesmo CPF: os dois
+    // podem passar pela consulta antes de um deles gravar. Nesse caso, o UNIQUE
+    // da V1 barra o segundo, e o método salvar transforma o erro do banco em 409.
     @Transactional
     public BeneficiarioResponseDTO criar(BeneficiarioRequestDTO dto) {
         // O GlobalExceptionHandler transforma a CpfDuplicadoException em 409.
@@ -58,8 +60,8 @@ public class BeneficiarioService {
             throw new CpfDuplicadoException(dto.cpf());
         }
 
-        // Sem idBeneficiario: com id nulo, o save faz persist (INSERT) e o banco
-        // gera o id. A data de cadastro é do servidor, não do cliente.
+        // Sem idBeneficiario: com id nulo, a gravação faz persist (INSERT) e o
+        // banco gera o id. A data de cadastro é do servidor, não do cliente.
         Beneficiario novo = Beneficiario.builder()
                 .nome(dto.nome())
                 .cpf(dto.cpf())
@@ -69,7 +71,7 @@ public class BeneficiarioService {
                 .dataCadastro(LocalDate.now())
                 .build();
 
-        return toResponseDTO(repository.save(novo));
+        return toResponseDTO(salvar(novo));
     }
 
     // PUT: substituição total. Os cinco campos do cliente são copiados sempre,
@@ -93,14 +95,16 @@ public class BeneficiarioService {
         beneficiario.setEndereco(dto.endereco());
         beneficiario.setSituacaoVulnerabilidade(dto.situacaoVulnerabilidade());
 
-        // Na transação, a entidade continua gerenciada e o Hibernate detecta a
-        // mudança sozinho no commit (dirty checking), então o save é opcional.
-        // Fica pela clareza e para o teste com mock da Etapa 6 poder verificá-lo.
-        return toResponseDTO(repository.save(beneficiario));
+        // Sem o flush, o Hibernate só enviaria o UPDATE no commit, depois do
+        // return, fora do try do salvar. O saveAndFlush envia o UPDATE aqui, e
+        // um CPF repetido por corrida entre dois PUTs também vira 409.
+        return toResponseDTO(salvar(beneficiario));
     }
 
     // PATCH: atualização parcial. Só os campos não nulos são aplicados; o CPF
-    // não está no BeneficiarioPatchDTO e só muda pelo PUT.
+    // não está no BeneficiarioPatchDTO e só muda pelo PUT. Sem CPF, não há
+    // UNIQUE a violar, então o save comum basta: na transação, a entidade
+    // continua gerenciada e o Hibernate envia o UPDATE no commit (dirty checking).
     @Transactional
     public BeneficiarioResponseDTO atualizarParcial(Long idBeneficiario, BeneficiarioPatchDTO dto) {
         Beneficiario beneficiario = buscarEntidadePorId(idBeneficiario);
@@ -130,11 +134,26 @@ public class BeneficiarioService {
         repository.delete(beneficiario);
     }
 
-    // Usado por buscarPorId, atualizar e atualizarParcial.
+    // Usado por buscarPorId, atualizar, atualizarParcial e deletar.
     // O GlobalExceptionHandler transforma a RecursoNaoEncontradoException em 404.
     private Beneficiario buscarEntidadePorId(Long idBeneficiario) {
         return repository.findById(idBeneficiario)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Beneficiário", idBeneficiario));
+    }
+
+    // Usado por criar e atualizar, os dois métodos que gravam CPF.
+    // O saveAndFlush envia o SQL ao banco aqui dentro do try. Se outra requisição
+    // gravou o mesmo CPF depois da consulta do existsByCpf, o UNIQUE da V1 recusa
+    // e o Spring lança DataIntegrityViolationException. O @Valid já conferiu os
+    // campos obrigatórios e os tamanhos, então a única restrição que sobra para
+    // violar é o UNIQUE do CPF: por isso o erro vira 409, e não o 500 genérico.
+    // A transação é desfeita do mesmo jeito (rollback), porque a exceção sobe.
+    private Beneficiario salvar(Beneficiario beneficiario) {
+        try {
+            return repository.saveAndFlush(beneficiario);
+        } catch (DataIntegrityViolationException e) {
+            throw new CpfDuplicadoException(beneficiario.getCpf());
+        }
     }
 
     private BeneficiarioResponseDTO toResponseDTO(Beneficiario entity) {
