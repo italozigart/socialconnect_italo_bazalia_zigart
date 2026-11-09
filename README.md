@@ -23,6 +23,7 @@
 | Banco de dados | H2 2.4.240 (desenvolvimento) · PostgreSQL | PostgreSQL: [registrar na aula 04] |
 | Migrations | Flyway (starter do Spring Boot) | 12.4.0 |
 | Documentação da API | springdoc-openapi | 3.1.0 |
+| Testes | JUnit Jupiter + Mockito + AssertJ (starters de teste do Spring Boot); integração com H2 em memória, sem Docker | JUnit Jupiter 6.0.3 · Mockito 5.23.0 · AssertJ 3.27.7 (versões gerenciadas pelo Spring Boot 4.1.1) |
 
 > As versões são registradas no início do semestre e só mudam com decisão da equipe documentada.
 
@@ -35,6 +36,10 @@
 # Back-end (a partir da aula 03)
 cd backend
 ./mvnw spring-boot:run
+
+# Testes do back-end (a partir da aula 07): unitários e de integração, sem Docker
+cd backend
+./mvnw test
 
 # Front-end (a partir da aula 09)
 cd frontend
