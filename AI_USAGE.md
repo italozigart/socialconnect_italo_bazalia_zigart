@@ -16,7 +16,7 @@ Para cada aula ou entrega, registre abaixo:
 ## Acordo de uso neste projeto
 
 - A IA atua como tutora: explica conceitos, estrutura o roteiro de trabalho e revisa o que eu produzo.
-- Como regra, o código e os artefatos do repositório são escritos por mim. Quando uma saída da IA for copiada para o repositório, isso é declarado na linha da sessão, com o arquivo afetado e o que a IA alterou (casos: `application.properties`, sessão #10; código da Etapa 2, sessão #12; código da Etapa 3, sessão #14; código da A1, sessão #16, parte dele reaproveitada na Etapa 4, sessão #17; código da Etapa 4, sessão #18; código da Etapa 5, sessões #19 e #20; código da Etapa 6, sessão #21).
+- Como regra, o código e os artefatos do repositório são escritos por mim. Quando uma saída da IA for copiada para o repositório, isso é declarado na linha da sessão, com o arquivo afetado e o que a IA alterou (casos: `application.properties`, sessão #10; código da Etapa 2, sessão #12; código da Etapa 3, sessão #14; código da A1, sessão #16, parte dele reaproveitada na Etapa 4, sessão #17; código da Etapa 4, sessão #18; código da Etapa 5, sessões #19 e #20; código da Etapa 6, sessão #21; código da Etapa 7, sessão #22).
 - Todo alerta técnico vindo da IA é verificado na prática (log, teste ou documentação oficial) antes de virar decisão.
 - Este arquivo é organizado com apoio da IA a partir das sessões de orientação; o conteúdo das colunas "Uso da saída" e "Como validei" é confirmado por mim antes de cada commit.
 - Sessões curtas de suporte (dúvidas pontuais e erros de terminal) são agrupadas numa única linha, com os tópicos listados.
@@ -34,6 +34,8 @@ Para cada aula ou entrega, registre abaixo:
 | Etapa 4 — Beneficiário: validação, erros e i18n | #15, #17 e #18 | Concluída: PR #14 mergeado em 03/10/2026 (`Closes #6`): Bean Validation nos DTOs com `@Valid`, constraint `@CPF`, erros em Problem Details (400, 404, 409 e 500 genérico) e mensagens em pt-BR; infraestrutura de erros e i18n reaproveitada da A1 |
 | Etapa 5 — Documentação Swagger | #19 e #20 | Concluída no PR com `Closes #7`: endpoints, DTOs e erros de beneficiário documentados no Swagger, com exemplo por erro, e contrato `docs/openapi.yaml` alinhado à API; springdoc mantido no 3.1.0, com o WARN `Json Processing Exception` registrado como problema conhecido |
 | Etapa 6 — Testes unitários e de integração | #21 | Concluída no PR com `Closes #8`: 12 testes unitários do `BeneficiarioService` (JUnit, Mockito e AssertJ), 8 testes de integração da API (porta aleatória, `RestClient` e H2) e o `contextLoads` sem Docker, todos no perfil `test`; CPF repetido por corrida entre requisições passa a responder 409, e não 500. Critérios da issue adaptados ao laboratório sem Docker: H2 no lugar do PostgreSQL 17 via Testcontainers e `RestClient` no lugar do MockMvc |
+| Mapeamento das Aulas 09 e 10 e do edital da A2 | #22 | Issue #9 (Doador e Doação) dividida em seis: a #9 reescrita como Etapa 7 (Doador) e cinco issues novas para as Etapas 8 a 12 (Doação em duas partes e três de front-end) |
+| Etapa 7 — Doador: cadastro e consulta | #22 e #23 | Concluída no PR com `Closes #9`: migration V3 `doadores` (a V2 fica para `produtos` da A1) com CHECK do tipo e índice `idx_doadores_nome`, enum `TipoDoador` gravado como texto, constraint `@Telefone`, POST (201 + `Location`), GET paginado em ordem de nome e GET por id (200 ou 404), Swagger e `docs/openapi.yaml` da parte de Doadores; 28 testes novos (5 unitários do `DoadorService`, 18 execuções da `@Telefone` e 5 de integração), 49 no total, sem Docker. Fora do escopo: PUT, PATCH e DELETE de doador |
 
 ## Registro
 
@@ -60,6 +62,8 @@ Para cada aula ou entrega, registre abaixo:
 | 19 | 03/10/2026 | Etapa 5 (código, issue #7) | Claude Opus 5.5 (claude.ai) | Pedir a conferência do repositório (`main` e `avaliacao1`), o que faltava na Etapa 5 e o código para eu revisar, testar e commitar, com as pendências anotadas (CPF no contrato, 400 e 409 faltando, camelCase × snake_case, WARN do springdoc). | **Código da Etapa 5 copiado integralmente da resposta da IA** (reentregue como arquivos inteiros na sessão #20): anotações do Swagger no `BeneficiarioController` (`@Tag`, `@Operation` com os `operationId` do contrato, `@ApiResponse` por status com `ProblemDetail` e exemplo, `@Parameter`), o novo `BeneficiarioExemplos`, os `@Schema` dos três DTOs (com os nomes de schema do contrato), os exemplos do `ProblemDetail`, o Javadoc da `@CPF`, a linha `springdoc.default-produces-media-type` do `application.properties` e o `docs/openapi.yaml` alinhado. Molde: `ProdutoController` e DTOs da A1, lidos da `avaliacao1` sem trazer código de Produtos, e a nota da Aula 06. Decisões tomadas com base na análise da IA: JSON em camelCase com o contrato alinhado, CPF só com 11 dígitos no contrato, 500 documentado só no Swagger, PATCH sem 409. A IA também recomendou o springdoc 3.1.1 para corrigir o WARN; não adotei (sessão #20). Para responder, a IA consultou o meu repositório, a issue #7, o repositório do professor, as notas das Aulas 05 e 06 e o código-fonte do springdoc 3.1.0 e 3.1.1, do swagger-core 2.2.55 e do swagger-ui 5.32.14. | Pela IA, antes da entrega: leitura do código-fonte para confirmar a causa do WARN, o nome `PageBeneficiarioResponse`, o preenchimento das respostas sem `content` com o tipo de retorno e a validação de inteiros do Swagger UI; o código não foi compilado pela IA. Por mim, em 24/10/2026 (sessão #20), no PC do laboratório: `./mvnw clean compile` com `BUILD SUCCESS` (14 arquivos-fonte depois dos DTOs, 15 depois do controller); pelo Swagger, com o banco vazio: POST válido → 201 (id 1) e o mesmo POST → 409; CPF com máscara e nome vazio → 400 com `cpf` e `nome` em `errors`; GET `/99` → 404; GET `/99999999999999999999` → 400 `parametro-invalido`; `sort=idade` → 400 `ordenacao-invalida`; PATCH `/1` com nome `"   "` → 400 só com `nome`; DELETE `/2` antes de existir → 404; POST com o CPF `12345678909` → 201 com `location: /api/v1/beneficiarios/2`; PUT `/2` com o CPF do id 1 → 409; DELETE `/2` → 204. No log: o 409 sem INSERT, e o 400 do id e o do PATCH sem nenhum SELECT. `git diff` do `docs/openapi.yaml` conferido linha a linha (49 inserções e 12 remoções, só na parte de Beneficiários). |
 | 20 | 24/10/2026 | Etapa 5 (retomada e execução, issue #7) | Claude Opus 5.5 (claude.ai) | Perguntar se algo da sessão #19 já tinha sido feito e como garantir que o projeto no PC estava atualizado; perguntar se o WARN do springdoc precisava sumir; pedir os passos para resolver a issue; suporte de terminal e conferência dos testes (ver lista abaixo). | Usado como referência: a IA conferiu o GitHub (`main` em `312ae6b`, nenhuma branch nova nem PR depois do #14, nada da Etapa 5 no código, repositório do professor no mesmo commit `286d78b`) e passou o roteiro de conferência do PC. Decisão minha, depois de a IA explicar que o WARN não é critério da issue nem muda as respostas da API: manter o springdoc 3.1.0. A IA reentregou o código da sessão #19 como arquivos inteiros (blocos `cat` para o Git Bash), sem a troca de versão, e organizou a etapa em quatro commits; este arquivo foi atualizado pela IA e revisado por mim. | Conferência do PC antes de começar: remoto certo; nenhuma mudança, stash ou commit fora do GitHub; `main` em `312ae6b` e `up to date with 'origin/main'`; identidade do Git conferida; Java 25.0.1 e `./mvnw clean compile` com `BUILD SUCCESS` (14 arquivos-fonte). Testes da etapa: ver "Como validei" da linha #19. |
 | 21 | 26/10/2026 | Etapa 6 (código, issue #8) | Claude Opus 5.5 (claude.ai) | Pedir a conferência do repositório (`main`, `avaliacao1` e o do professor), o que faltava na issue #8 e o código dos testes para eu revisar, testar e commitar, com os testes da A1 como molde e as pendências anotadas (`contextLoads` dependente do Testcontainers, corrida no CPF, WARN do springdoc). | **Código da Etapa 6 copiado integralmente da resposta da IA:** `BeneficiarioServiceTest.java` (12 testes), `BeneficiarioControllerIntegrationTest.java` (8 testes), `src/test/resources/application-test.properties` (perfil `test`), o `ApiApplicationTests` sem o `@Import(TestcontainersConfiguration.class)` e com `@ActiveProfiles("test")`, o método `salvar` do `BeneficiarioService` (`saveAndFlush` dentro de um `try`, com a `DataIntegrityViolationException` virando `CpfDuplicadoException`) e as linhas de testes do README. Molde: `ProdutoServiceTest` e `ProdutoControllerIntegrationTest` da A1, lidos da `avaliacao1` com `git show`, sem trazer código de Produtos; os testes de beneficiário do professor; a nota da Aula 07 e o roteiro do dojo. O que a IA alterou em relação ao molde: tabela limpa antes de cada teste de integração (`deleteAll`), no lugar de um nome diferente por teste; perfil `test`; no teste do POST, o `saveAndFlush` simulado devolve outro objeto, para o `ArgumentCaptor` ver a entidade como o Service a enviou (no molde, o `thenAnswer` alterava o próprio argumento, e o captor via o id já preenchido). Decisões tomadas com base na análise da IA: H2 e `RestClient` no lugar do PostgreSQL 17 via Testcontainers e do MockMvc pedidos na issue; `TestcontainersConfiguration` e `TestApiApplication` mantidos como o Initializr gerou. Para responder, a IA consultou o meu repositório, o do professor, as notas da Aula 07 e o código-fonte do Spring Framework 7.0.9, do Spring Data 4.1.1 e do Spring Boot 4.1.1. | Pela IA, antes da entrega: os 12 testes unitários passaram com JUnit 5.10, Mockito 2.23 e AssertJ 3.14 reais (pacotes do Ubuntu), com o Lombok real e stubs das APIs do Spring; com defeitos colocados de propósito no Service (gravação fora do `try`, verificação de CPF depois dos setters no PUT, PATCH aplicando nulo e prioridade dos filtros invertida), o teste correspondente falhou; os CPFs usados nos testes passaram no `CpfValidator`. O teste de integração só foi compilado, contra assinaturas copiadas do código-fonte do Spring, e não rodou, porque o ambiente da IA não acessa o Maven Central. Por mim, em 09/11/2026, no PC do laboratório, sem Docker: `./mvnw clean test` com `Tests run: 21, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS` (1 teste no `ApiApplicationTests`, 8 no `BeneficiarioControllerIntegrationTest` e 12 no `BeneficiarioServiceTest`); no log, o perfil `test` ativo, a V1 aplicada no H2 e o WARN de `PageImpl` só uma vez, no teste da listagem. |
+| 22 | 09/11/2026 | Mapeamento das Aulas 03–10 e Etapa 7 (código, issue #9) | Claude Opus 5.5 (claude.ai) | Enviar o zip com os materiais do Teams e pedir: o mapeamento, aula por aula, do que o professor pediu e ainda não está no repositório (incluindo as avaliações A2 a A4); a comparação com a issue #9 e a proposta de mantê-la, mudá-la ou dividi-la, com títulos e critérios prontos para colar; só depois, o passo a passo e o código da primeira issue. | Mapeamento usado como referência: são novos em relação ao projeto a Aula 09 (CORS, front-end React + TypeScript com Vite e Axios), a Aula 10 (MUI, React Hook Form + Zod, acessibilidade) e o edital da A2 (seminário em grupo); não há material das Aulas 11 a 20 nem edital da A3 ou da A4. A IA também apontou problemas nas Doações do repositório do professor, que decidi não copiar (ver tópicos). Decisão minha, com base na proposta da IA: dividir a #9 em seis issues. O texto da nova #9 (Etapa 7, Doador) e das cinco issues novas (Etapas 8 a 12) foi redigido pela IA, revisado por mim e colado no GitHub. **Código da Etapa 7 copiado integralmente da resposta da IA** (zip `etapa7-doador.zip`, 17 arquivos): `V3__create_doadores_table.sql`, `Doador`, `TipoDoador`, `DoadorRepository`, `DoadorRequestDTO`, `DoadorResponseDTO`, `validation/Telefone.java`, `validation/TelefoneValidator.java`, `DoadorService`, `DoadorController`, `DoadorExemplos`, `DoadorServiceTest`, `TelefoneValidatorTest`, `DoadorControllerIntegrationTest` e as alterações no `messages.properties`, no comentário do `ApiApplicationTests` e no `docs/openapi.yaml`. Base: a dinâmica da Aula 04 (migration e `Doador.java`), o contrato `docs/openapi.yaml`, a `@Telefone` do repositório do professor (Aula 06) e o molde do Beneficiário e da Etapa 6. O que a IA alterou em relação às bases: tabela na V3, e não na V2; CHECK com os valores do enum e índice em `nome`; `@Telefone` só com dígitos e conferindo o início do número (2 a 5 no fixo, 9 no celular), como o Zod da Aula 10, enquanto a do professor aceitava máscara e só recusava 0 e 1; e-mail e telefone em branco gravados como nulos; GET por id, que o contrato não tinha, para o `Location` do POST apontar para um endereço que existe; `enumAsRef` no `TipoDoador`, para o Swagger publicar o schema separado, como no contrato. A IA também salvou no Projeto do Claude as Aulas 09 e 10 e o edital da A2 em texto. Para responder, consultou os materiais, o meu repositório (a `avaliacao1` só lida), o do professor e o código-fonte do springdoc 3.1.0 e do swagger-core 2.2.52. | Pela IA, antes da entrega: o código novo e o de beneficiário compilaram com o Lombok e as anotações reais do Swagger e do Jakarta Validation, com o Spring só como esqueleto das APIs; 35 testes unitários passaram com JUnit, Mockito e AssertJ reais (5 do `DoadorServiceTest`, 18 do `TelefoneValidatorTest` e 12 do `BeneficiarioServiceTest`); 7 defeitos colocados de propósito no Service e no validador fizeram falhar ao menos um teste cada; a V3 rodou num H2 2.2.220, e o CHECK, o NOT NULL e os tamanhos recusaram o que deviam; o zip foi aplicado num clone limpo da `main` e a sequência de commits deixou o `git status` vazio. O `DoadorControllerIntegrationTest` só foi compilado, porque o ambiente da IA não acessa o Maven Central. Por mim: ver "Como validei" da linha #23. |
+| 23 | 09/11/2026 | Etapa 7 (execução, issue #9) | Claude Opus 5.5 (claude.ai) | Pedir a conferência do repositório e do zip da sessão #22 antes de aplicar (a `main` ainda em `621fe37`? o zip bate com a #9 como está no GitHub?), o roteiro de execução (zip, testes, Swagger, commits, push e PR com `Closes #9`) e, depois do resultado dos testes, este arquivo com as sessões #22 e #23 e as perguntas de defesa da Etapa 7. | Usado como referência: a IA conferiu o GitHub (`main` em `621fe37`, `avaliacao1` intacta em `5e68c1b`, nenhuma branch nova, último PR o #16, repositório do professor ainda em `286d78b`) e a página pública da #9: o corpo bate com o zip, mas o título e a milestone A1 ainda eram os antigos. A IA passou o hash SHA-256 do zip conferido, o `git status` esperado depois do `unzip`, a contagem esperada de testes por classe, o roteiro do Swagger, a sequência de 7 commits da sessão #22 e o texto do PR. Nenhum código novo nesta sessão; este arquivo foi atualizado pela IA e revisado por mim. | Pela IA, antes do roteiro: o zip tem 17 arquivos em UTF-8 e LF, sem tabs, e os 3 alterados só acrescentam linhas; o `docs/openapi.yaml` abre como YAML válido, sem referência quebrada; os 23 testes unitários do doador e da `@Telefone` passaram de novo com JUnit, Mockito, AssertJ e Lombok reais, e 3 defeitos colocados de propósito foram pegos; a V1 e a V3 rodaram num H2 2.2.220 (o CHECK recusou `ONG` e `pessoa_fisica`, o banco recusou nome e tipo nulos, nome com 201 caracteres e e-mail com 255, e o plano da listagem usou o `idx_doadores_nome`); os 7 commits foram ensaiados numa cópia limpa da `main`. Sem Maven Central, o `contextLoads` e os testes de integração não rodaram no ambiente da IA. Por mim, em 09/11/2026, no LAB03-PC03, sem Docker: hash do zip igual ao conferido pela IA (`b6494d7d…950e`); depois do `unzip -o`, 3 arquivos alterados e 6 novos no `git status --short`; `./mvnw clean test` com `Tests run: 49, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS` em 23,7 s (1 no `ApiApplicationTests`, 8 no `BeneficiarioControllerIntegrationTest`, 12 no `BeneficiarioServiceTest`, 5 no `DoadorControllerIntegrationTest`, 5 no `DoadorServiceTest` e 18 no `TelefoneValidatorTest`); no log do Flyway, `Migrating schema "PUBLIC" to version "3 - create doadores table"` e `Successfully applied 2 migrations to schema "PUBLIC", now at version v3`. Pelo Swagger, com o banco vazio: POST completo → 201 com `location: /api/v1/doadores/1`; POST com e-mail `""` e telefone `"   "` → 201 (id 2) com `email` e `telefone` null; nome vazio, sem tipo, e-mail sem @ e telefone com máscara → 400 com `email`, `nome`, `telefone` e `tipo` em `errors`, em ordem alfabética; telefone `11899999999` → 400 só com `telefone`; GET da lista sem parâmetros → 200 com `totalElements: 2`, `pageSize: 10` e a Ana antes do Mercado; `sort=idade` → 400 `ordenacao-invalida`; GET `/1` → 200 e `/99` → 404 `Doador com id 99 não encontrado.`. No navegador, `/api/v1/doadores/abc` → 400 `parametro-invalido`. No Git Bash, `curl -X DELETE /api/v1/doadores/1` → 405 (DELETE fora do escopo). O `"tipo": "ONG"` → 400 `corpo-invalido` ficou coberto pelo `DoadorControllerIntegrationTest`. |
 
 ### Tópicos da sessão #8 (suporte)
 
@@ -167,6 +171,25 @@ Para cada aula ou entrega, registre abaixo:
 - Testes de integração independentes: a tabela é limpa antes de cada teste, porque o H2 e o contexto do Spring são reaproveitados entre os testes da classe.
 - Avisos esperados no `./mvnw test`: o Mockito avisa que se anexa sozinho como agente da JVM (sem efeito no resultado) e o Spring Data mostra uma vez o WARN de `PageImpl`, no teste da listagem. O WARN do springdoc não aparece, porque nenhum teste abre o `/api-docs`.
 
+### Tópicos da sessão #22 (mapeamento e Etapa 7)
+
+- Material novo: Aula 09 (`CorsConfig` para `http://localhost:5173`, front-end React + TypeScript com Vite e Axios), Aula 10 (MUI, React Hook Form + Zod com CPF `^\d{11}$` e telefone `^\d{10,11}$`, WCAG, teste de usabilidade) e o edital da A2 (seminário em grupo de 3 a 4, inscrição até 13/11 e apresentação em 27/11).
+- Doações do repositório do professor, que não devem ser copiadas: a V2 e a V3 dele criam `doacoes` duas vezes e a V3 aponta para `doadores`, que nenhuma migration cria; o Flyway nem roda lá (só `flyway-core`, sem o starter do Boot 4); o `DoacaoController` não tem POST, mas o dojo testa um; o `toEntity` perde a `descricao`; o `listar` só filtra com os três filtros juntos; o `@PageableDefault` do roteiro do mob não compila.
+- Por que dividir a #9: juntava duas tabelas, um CRUD que o mob pede completo, o TDD da `@DataNaoFutura`, o ADR e o dojo; não tinha endpoint de doador, mas a doação precisa de um doador gravado por causa da FK; e "ensaio da A1" deixou de valer.
+- `doadores` na V3: a V2 é a de `produtos` da A1, ainda sem merge. Com números diferentes, as duas convivem quando o PR #13 entrar.
+- Doador sem 409: o contrato não tem CPF nem CNPJ, então não há campo único para repetir.
+- Ordem sugerida das issues: 7 → 8 → 9 → 10 → 11 → 12; a 10 só depende do Beneficiário e pode vir antes, se o professor cobrar o front-end.
+
+### Tópicos da sessão #23 (Etapa 7, execução)
+
+- Conferência feita pela IA sem a API do GitHub (não liberada na sessão): `git ls-remote` nos dois repositórios e a página pública da #9.
+- A #9 tinha o corpo novo, mas o título e a milestone A1 antigos; a sessão #22 pedia para trocar os dois.
+- Hash SHA-256 do zip para garantir que o arquivo aplicado no laboratório era o mesmo conferido pela IA.
+- Maior risco antes dos testes: o `ddl-auto=validate` com o enum gravado como texto. O mesmo mapeamento já tinha rodado no laboratório na A1, com a `categoria` do Produto, e passou de novo aqui.
+- `"email": "   "` (só espaços) dá 400, porque o `@Email` recusa; e-mail vazio e telefone vazio ou só com espaços viram `null`.
+- Log dos testes gravado com `tee` em `~/etapa7-testes.log`, fora do repositório, para não entrar no commit.
+- O bloco de clone (para PC sem a pasta) foi rodado num PC que já tinha o repositório: deu `destination path ... already exists` e não alterou nada.
+
 ### Perguntas de defesa — Etapa 0 (respostas minhas)
 
 1. Por que `docs/extensao/` precisou de um arquivo dentro? O Git não versiona pasta vazia.
@@ -205,6 +228,17 @@ Para cada aula ou entrega, registre abaixo:
 1. Por que as respostas de erro declaram `content` com o `ProblemDetail`, e as de sucesso não? O `content` é declarado nas respostas de erro para especificar o schema correto do corpo retornado, que é o `ProblemDetail`. Sem essa declaração, o springdoc preenche automaticamente o `content` com base no tipo de retorno do método, podendo documentar um erro 404 como se retornasse um `BeneficiarioResponse`. Nas respostas de sucesso, esse preenchimento automático é desejado, pois corresponde ao tipo de retorno real do método.
 2. O que disparava o WARN `Json Processing Exception` neste projeto, e por que ele não muda as respostas da API? O WARN é causado por um bug do springdoc 3.1.0 durante a geração da documentação OpenAPI, quando ele tenta copiar um schema por meio de JSON e ocorre uma exceção. Neste projeto, isso é disparado pelo `Pageable` anotado com `@ParameterObject`: seus campos `page` e `size` possuem, respectivamente, as validações `@Min(0)` e `@Min(1)`, o que explica as duas linhas de WARN. Isso acontece quando o Swagger é aberto, durante a geração de `/api-docs`, e não durante uma requisição da API. O springdoc trata a exceção internamente e continua utilizando o schema original. Portanto, o WARN não altera as respostas HTTP, pois nenhum controller ou handler de erros participa desse processo.
 3. Por que o contrato ficou em camelCase, se a regra da disciplina é o prefixo `id_`? O contrato está correto porque a regra do prefixo `id_` se aplica às chaves primárias no banco de dados, não aos campos do JSON. No banco, a coluna segue a convenção com o nome `id_beneficiario`, definida tanto na migration V1 quanto no mapeamento `@Column(name = "id_beneficiario")` da Entity. Já o JSON utiliza `camelCase`, seguindo os nomes dos componentes dos records Java, os exemplos das Aulas 05 e 06 e o padrão esperado pelo teste do professor, que verifica `jsonPath("$.idBeneficiario")`. Portanto, as duas convenções são respeitadas em suas respectivas camadas.
+
+### Perguntas de defesa — Etapa 7
+
+> Perguntas da IA (sessões #22 e #23). As respostas serão registradas aqui por mim.
+
+1. Por que `doadores` é a V3? O que o Flyway faria com duas V2?
+2. Se o enum já limita os valores, para que serve o CHECK no banco? E por que `EnumType.STRING`, e não o padrão?
+3. Por que `"tipo": "ONG"` dá 400 de corpo inválido, sem o campo na lista `errors`?
+4. Por que o POST de doador não tem 409, e o de beneficiário tem?
+5. Por que `"telefone": "   "` é gravado como `null`, mas `"email": "   "` dá 400?
+6. O H2 em memória aplica V1, V2 e V3 em ordem a cada subida. O que aconteceria num PostgreSQL que já aplicou a V3 quando a V2 da A1 entrar na `main`?
 
 ## Prompts na íntegra
 
@@ -363,6 +397,91 @@ Para cada aula ou entrega, registre abaixo:
 > - Quero os arquivos inteiros, prontos para colar (blocos `cat` para o Git Bash; arquivos longos como download), nunca trechos para editar. Os testes esperados e os comandos vêm junto.
 > - Quero concluir rápido: confira o repositório (a `main`, a `avaliacao1` e o repositório do professor), me diga o que falta na issue #8 e gere o código para eu revisar, testar e commitar.
 > - O `AI_USAGE.md` faz parte da avaliação e você o mantém atualizado. A última sessão registrada é a #20, então a próxima é a #21. Código copiado da IA é declarado na linha da sessão.
+
+**#22 — 09/11/2026** (com o zip dos materiais do Teams anexado)
+
+> Vamos começar a próxima etapa do projeto SocialConnect. A Etapa 6 (issue #8, testes) foi mergeada no PR #16.
+>
+> **Antes de gerar código, faça o mapeamento:**
+> 1. Leia todos os materiais de aula que anexei (do Teams) e o repositório do professor (Prof-JamesCampos/socialconnect-api). Não lembro até qual aula tínhamos material, então considere tudo.
+> 2. Liste o que o professor pediu de novo (features, endpoints, regras, entregas e avaliações A2–A4) que ainda não está no meu repositório, aula por aula, e diga o que já está coberto.
+> 3. Compare com a issue #9 (Etapa 7) do meu backlog e proponha se ela continua como está, se muda ou se vira mais de uma issue, com títulos e critérios de aceite prontos para eu colar no GitHub.
+> 4. Só depois disso, o passo a passo e o código da primeira issue.
+>
+> **Estado atual**
+> - Repositório: italozigart/socialconnect_italo_bazalia_zigart. `main` em `621fe37` (merge do PR #16). Etapas 0 a 6 concluídas.
+> - Beneficiário completo: CRUD com PUT/PATCH, paginação e filtros (nome, CPF), Bean Validation com `@CPF` (11 dígitos, sem máscara), Problem Details em pt-BR (400, 404, 409 e 500 genérico), Swagger completo e `docs/openapi.yaml` alinhado (camelCase, `{idBeneficiario}`).
+> - Testes (Etapa 6): `BeneficiarioServiceTest` (12, JUnit + Mockito + AssertJ, padrão AAA, nomes `deveXQuandoY`), `BeneficiarioControllerIntegrationTest` (8, `@SpringBootTest` com porta aleatória, `RestClient`, H2 e `deleteAll` antes de cada teste) e `contextLoads`, todos com `@ActiveProfiles("test")` e `src/test/resources/application-test.properties`. `./mvnw clean test`: 21 testes, BUILD SUCCESS, sem Docker. CPF repetido por corrida agora dá 409 (`saveAndFlush` + `DataIntegrityViolationException` → `CpfDuplicadoException`).
+> - Migration atual: só a V1 (`beneficiarios`). A A1 usou a V2 para `produtos` na branch dela.
+> - Branch `avaliacao1` (A1, módulo de Produtos): PR #13 aberto, sem merge, **congelada até a correção** (vou confirmar se o professor já corrigiu). Não fazer commit, merge nem rebase nela, nem usar "Resolve conflicts". Pode ser lida com `git show origin/avaliacao1:<arquivo>`. Atenção ao número das migrations, para não colidir com a V2 da A1.
+> - `TestcontainersConfiguration` e `TestApiApplication` mantidos como o Initializr gerou, fora do `./mvnw test`.
+> - WARN conhecido do springdoc 3.1.0 (`Json Processing Exception`), mantido de propósito.
+>
+> **Issue #9 como está no backlog (Etapa 7 — Doador e Doação, ensaio da A1)**
+> - Migrations `doadores` e `doacoes`, com FK e índices
+> - Enums `TipoDoador` e `TipoDoacao` com `@Enumerated(EnumType.STRING)`
+> - GET de doações paginado com filtros `dataInicio`, `dataFim` e `tipo`; POST → 201
+> - Validação `@DataNaoFutura` feita em TDD
+> - Decisão entre 404 e 422 para doador inexistente registrada em ADR
+> - Os três testes do dojo passando
+> - Referências: Aulas 04, 05 e 07, roteiros do mob programming e do dojo
+>
+> **Ambiente e forma de trabalho**
+> - PC do laboratório (usuário `Alunos`): Windows, Git Bash, JDK 25.0.1 (projeto em Java 21), **sem Docker**. Stack: Spring Boot 4.1.1, springdoc 3.1.0, H2 em memória, Flyway 12.4.0. Repositório em `/c/Users/Alunos/projeto/topicos/socialconnect_italo_bazalia_zigart`. O PC pode mudar entre aulas (LAB03-PC02, LAB03-PC03).
+> - Comandos `git` na raiz do repositório; `./mvnw` dentro de `backend/`.
+> - Fluxo: conferir que a máquina está igual ao GitHub → branch a partir da `main` atualizada → commits em Conventional Commits com o número da issue → PR com `Closes #N` → merge com merge commit.
+> - Quero os arquivos inteiros, prontos para colar (blocos `cat` para o Git Bash, sem tabs; arquivos longos num zip com os caminhos do repositório, extraído com `unzip -o`), nunca trechos para editar. Os testes esperados e os comandos vêm junto.
+> - Cada etapa nova vem com testes unitários e de integração no mesmo molde da Etapa 6.
+> - O `AI_USAGE.md` faz parte da avaliação e você o mantém atualizado. A última sessão registrada é a #21, então a próxima é a #22. Código copiado da IA é declarado na linha da sessão, e o commit de docs só entra depois de eu confirmar o resultado dos testes.
+
+**#23 — 09/11/2026** (com o zip `etapa7-doador.zip` anexado) — prompt principal abaixo; o envio da saída do terminal e das respostas do Swagger para conferência está nos tópicos da sessão #23.
+
+> Vamos executar a Etapa 7 do projeto SocialConnect (issue #9, Doador). Anexei o etapa7-doador.zip, gerado na sessão #22.
+>
+> **O que já foi feito na sessão #22**
+> - Mapeamento das Aulas 03–10, do edital da A2 e do repositório do professor (Prof-JamesCampos/socialconnect-api, `main` em `286d78b`).
+> - A antiga #9 (Doador e Doação) virou seis issues. Já editei a #9 e criei as outras no GitHub:
+>   - #9: Etapa 7, Doador.
+>   - Etapas 8 e 9: Doação (registro e listagem; alteração e remoção).
+>   - Etapas 10, 11 e 12: front-end.
+> - Código da Etapa 7 entregue no zip anexado: 17 arquivos, sendo 14 novos e 3 alterados (`messages.properties`, `ApiApplicationTests` e `docs/openapi.yaml`). Conteúdo:
+>   - V3 `doadores` com CHECK do tipo e índice `idx_doadores_nome`;
+>   - `Doador`, `TipoDoador` e `DoadorRepository`;
+>   - DTOs com Bean Validation;
+>   - `@Telefone` (só dígitos: 10 para fixo, 11 para celular);
+>   - `DoadorService` e `DoadorController`: POST → 201, GET paginado em ordem de nome, GET por id → 200 ou 404;
+>   - `DoadorExemplos` para o Swagger;
+>   - testes: `DoadorServiceTest` (5), `TelefoneValidatorTest` (18) e `DoadorControllerIntegrationTest` (5).
+> - Esperado no `./mvnw clean test`: 49 testes e BUILD SUCCESS. Na sessão #22, o teste de integração só foi compilado, sem rodar.
+>
+> **O que quero agora**
+> 1. Conferir o repositório e o zip antes de eu aplicar: a `main` continua em `621fe37`? O zip bate com a issue #9 como está no GitHub?
+> 2. Me guiar na execução: aplicar o zip, rodar os testes e conferir pelo Swagger, fazer os commits, o push e o PR com `Closes #9`. Se algum teste falhar, corrigir com arquivos inteiros.
+> 3. Depois que eu confirmar o resultado dos testes, entregar o `AI_USAGE.md` inteiro com as sessões #22 e #23.
+>    - A #22 foi o mapeamento, a proposta das issues e o código da Etapa 7, copiado integralmente da IA.
+>    - A #23 é esta, de execução.
+>    - Inclua as perguntas de defesa da Etapa 7 para eu responder.
+>
+> **Estado atual**
+> - Repositório: italozigart/socialconnect_italo_bazalia_zigart. `main` em `621fe37` (merge do PR #16); Etapas 0 a 6 concluídas.
+> - Migrations: V1 (`beneficiarios`) na main e V3 (`doadores`) no zip. A V2 está reservada para `produtos` da A1.
+> - Branch `avaliacao1` (A1, PR #13 sem merge): **congelada até a correção**. Não fazer commit, merge nem rebase nela, nem usar "Resolve conflicts". Pode ser lida com `git show origin/avaliacao1:<arquivo>`.
+> - `TestcontainersConfiguration` e `TestApiApplication` continuam como o Initializr gerou, fora do `./mvnw test`.
+> - O WARN do springdoc 3.1.0 (`Json Processing Exception`) é conhecido e foi mantido de propósito.
+>
+> **Ambiente e forma de trabalho**
+> - PC do laboratório (usuário `Alunos`): Windows, Git Bash, JDK 25.0.1 (projeto em Java 21), **sem Docker**.
+> - Stack: Spring Boot 4.1.1, springdoc 3.1.0, H2 em memória e Flyway 12.4.0.
+> - Repositório em `/c/Users/Alunos/projeto/topicos/socialconnect_italo_bazalia_zigart`. O PC pode mudar entre aulas (LAB03-PC02, LAB03-PC03).
+> - Comandos `git` na raiz do repositório; `./mvnw` dentro de `backend/`.
+> - Fluxo:
+>   1. conferir que a máquina está igual ao GitHub;
+>   2. criar a branch `feat/doador` a partir da `main` atualizada;
+>   3. commits em Conventional Commits com `#9`;
+>   4. PR com `Closes #9`;
+>   5. merge com merge commit.
+> - Quero arquivos inteiros, prontos para colar: blocos `cat` para o Git Bash, sem tabs; arquivos longos num zip com os caminhos do repositório, extraído com `unzip -o`. Nunca trechos para editar. Os testes esperados e os comandos vêm junto.
+> - O `AI_USAGE.md` faz parte da avaliação e você o mantém atualizado. A última sessão registrada é a #21. Código copiado da IA é declarado na linha da sessão, e o commit de docs só entra depois de eu confirmar o resultado dos testes.
 
 ---
 
