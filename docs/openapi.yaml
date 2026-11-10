@@ -5,7 +5,11 @@
 # - Parâmetro de caminho {idBeneficiario}; a URL continua /api/v1/beneficiarios/1.
 # - CPF só com 11 dígitos: ^\d{14}$ eram 14 dígitos, e não o CPF com máscara.
 # - Respostas 400 e 409 que faltavam. O 500 (erro inesperado) fica só no Swagger.
-# Doações, Doadores e Produtos mantêm o texto original até serem implementados.
+# Etapa 7 (issue #9): a parte de Doadores foi alinhada à API, nos mesmos moldes.
+# - JSON em camelCase (idDoador) e parâmetro de caminho {idDoador}.
+# - GET por id, que o Location do POST aponta, e as respostas 400 e 404.
+# - DoadorRequest com os limites da V3: e-mail até 254 e telefone só com dígitos.
+# Doações e Produtos mantêm o texto original até serem implementados.
 openapi: 3.1.0
 info:
   title: SocialConnect API
@@ -340,14 +344,21 @@ paths:
       parameters:
         - name: page
           in: query
+          required: false
           schema:
             type: integer
             default: 0
         - name: size
           in: query
+          required: false
           schema:
             type: integer
             default: 10
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: Lista paginada de doadores
@@ -355,6 +366,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PageDoadorResponse'
+        '400':
+          description: Parâmetros inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
     post:
       tags:
         - Doadores
@@ -369,10 +386,53 @@ paths:
       responses:
         '201':
           description: Doador criado com sucesso
+          headers:
+            Location:
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DoadorResponse'
+        '400':
+          description: Dados inválidos, tipo fora da lista ou JSON malformado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/doadores/{idDoador}:
+    get:
+      tags:
+        - Doadores
+      summary: Busca um doador por ID
+      operationId: buscarDoadorPorId
+      parameters:
+        - name: idDoador
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Dados do doador
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoadorResponse'
+        '400':
+          description: Id inválido (não numérico ou acima do limite)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Doador não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
 
   /api/v1/produtos:
     get:
@@ -577,14 +637,15 @@ components:
         email:
           type: string
           format: email
+          maxLength: 254
         telefone:
           type: string
-          maxLength: 20
+          pattern: ^\d{10,11}$
 
     DoadorResponse:
       type: object
       properties:
-        id_doador:
+        idDoador:
           type: integer
           format: int64
         nome:
@@ -607,6 +668,10 @@ components:
           type: integer
         totalPages:
           type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
 
     CategoriaProduto:
       type: string
