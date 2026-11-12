@@ -192,7 +192,7 @@ class DoadorControllerIntegrationTest {
         Map<String, Object> corpo = resposta.getBody();
         assertThat(corpo).isNotNull();
         assertThat(corpo.get("type")).isEqualTo(ERROS + "recurso-nao-encontrado");
-        assertThat(corpo.get("detail")).isEqualTo("Doador com id 99999 não encontrado.");
+        assertThat(corpo.get("detail")).isEqualTo("Doador com id 99999 não existe.");
         assertThat(corpo.get("instance")).isEqualTo(URL + "/99999");
     }
 

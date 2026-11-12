@@ -198,7 +198,7 @@ class BeneficiarioControllerIntegrationTest {
         Map<String, Object> corpo = resposta.getBody();
         assertThat(corpo).isNotNull();
         assertThat(corpo.get("type")).isEqualTo(ERROS + "recurso-nao-encontrado");
-        assertThat(corpo.get("detail")).isEqualTo("Beneficiário com id 99999 não encontrado.");
+        assertThat(corpo.get("detail")).isEqualTo("Beneficiário com id 99999 não existe.");
     }
 
     @Test
