@@ -14,8 +14,17 @@ import java.lang.annotation.Target;
  * {@link DataNaoFuturaValidator}). Usada na data da doação: a doação é
  * registrada quando chega, então a data dela não pode ser depois de hoje.
  * <p>
- * Feita em TDD (Aula 07). Este é o GREEN: o mínimo para o teste
- * deveRetornar400QuandoDataFutura passar, com a mensagem em texto fixo.
+ * Feita em TDD (Aula 07), em três commits:
+ * <ol>
+ *   <li>RED: o teste deveRetornar400QuandoDataFutura, que falhava (a API
+ *       aceitava a data no futuro e respondia 201);</li>
+ *   <li>GREEN: esta anotação e o validador, com a mensagem em texto fixo;</li>
+ *   <li>REFACTOR: a mensagem foi para o messages.properties (i18n), como as
+ *       da @CPF e da @Telefone, e o teste continuou passando.</li>
+ * </ol>
+ * O Bean Validation já tem a @PastOrPresent, que faz a mesma conferência. A
+ * @DataNaoFutura é o exercício de validação customizada das Aulas 06 e 07,
+ * com o nome da regra em português e a mensagem no messages.properties.
  */
 @Documented
 @Constraint(validatedBy = DataNaoFuturaValidator.class) // classe que faz a checagem
@@ -23,7 +32,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)                     // precisa existir em tempo de execução
 public @interface DataNaoFutura {
 
-    String message() default "A data não pode estar no futuro.";
+    String message() default "{validacao.data.futura}";
 
     Class<?>[] groups() default {};
 
