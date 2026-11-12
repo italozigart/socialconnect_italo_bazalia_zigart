@@ -23,7 +23,7 @@ final class DoacaoExemplos {
               "instance": "/api/v1/doacoes",
               "timestamp": "2026-11-12T22:30:00Z",
               "errors": [
-                { "field": "dataDoacao", "message": "A data da doação é obrigatória." },
+                { "field": "dataDoacao", "message": "A data não pode estar no futuro. Informe a data de hoje ou uma data passada." },
                 { "field": "idDoador", "message": "O doador é obrigatório: informe o idDoador." },
                 { "field": "tipo", "message": "O tipo é obrigatório: ALIMENTO, ROUPA ou FINANCEIRA." },
                 { "field": "valor", "message": "O valor deve ser maior que zero." }
