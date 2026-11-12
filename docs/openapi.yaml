@@ -9,7 +9,12 @@
 # - JSON em camelCase (idDoador) e parâmetro de caminho {idDoador}.
 # - GET por id, que o Location do POST aponta, e as respostas 400 e 404.
 # - DoadorRequest com os limites da V3: e-mail até 254 e telefone só com dígitos.
-# Doações e Produtos mantêm o texto original até serem implementados.
+# Etapa 8 (issue #17): a parte de Doações foi alinhada à API, nos mesmos moldes.
+# - JSON em camelCase (idDoacao, idDoador, dataDoacao) e parâmetro {idDoacao}.
+# - GET por id, Location no 201 e as respostas 400, 404 e 422 (doador
+#   inexistente: decisão em docs/adr/0001-doador-inexistente.md).
+# - DoacaoResponse com a descricao, e PageDoacaoResponse com first e last.
+# Produtos mantém o texto original até ser implementado.
 openapi: 3.1.0
 info:
   title: SocialConnect API
@@ -305,7 +310,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PageDoacaoResponse'
         '400':
-          description: Parâmetros inválidos
+          description: Período invertido, data ou tipo inválidos, ou ordenação por atributo inexistente
           content:
             application/json:
               schema:
@@ -324,12 +329,55 @@ paths:
       responses:
         '201':
           description: Doação registrada com sucesso
+          headers:
+            Location:
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/DoacaoResponse'
         '400':
-          description: Dados inválidos
+          description: Dados inválidos, tipo fora da lista ou JSON malformado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Doador inexistente (o idDoador não é de nenhum doador cadastrado)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/doacoes/{idDoacao}:
+    get:
+      tags:
+        - Doações
+      summary: Busca uma doação por ID
+      operationId: buscarDoacaoPorId
+      parameters:
+        - name: idDoacao
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Dados da doação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoacaoResponse'
+        '400':
+          description: Id inválido (não numérico ou acima do limite)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Doação não encontrada
           content:
             application/json:
               schema:
@@ -568,19 +616,23 @@ components:
     DoacaoRequest:
       type: object
       required:
-        - id_doador
-        - data_doacao
+        - idDoador
+        - dataDoacao
         - tipo
       properties:
-        id_doador:
+        idDoador:
           type: integer
           format: int64
-        data_doacao:
+        dataDoacao:
           type: string
           format: date
+          description: Hoje ou uma data passada
         valor:
           type: number
           format: decimal
+          exclusiveMinimum: 0
+          maximum: 99999999.99
+          description: Opcional. Maior que zero, com até 2 casas decimais
         tipo:
           $ref: '#/components/schemas/TipoDoacao'
         descricao:
@@ -590,13 +642,13 @@ components:
     DoacaoResponse:
       type: object
       properties:
-        id_doacao:
+        idDoacao:
           type: integer
           format: int64
-        id_doador:
+        idDoador:
           type: integer
           format: int64
-        data_doacao:
+        dataDoacao:
           type: string
           format: date
         valor:
@@ -604,6 +656,8 @@ components:
           format: decimal
         tipo:
           $ref: '#/components/schemas/TipoDoacao'
+        descricao:
+          type: string
 
     PageDoacaoResponse:
       type: object
@@ -616,6 +670,10 @@ components:
           type: integer
         totalPages:
           type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
 
     TipoDoador:
       type: string

@@ -78,6 +78,32 @@ public class GlobalExceptionHandler {
                 request);
     }
 
+    // 422: o corpo da doação está bem formado e passou no @Valid, mas o
+    // idDoador não é de nenhum doador cadastrado. Por que 422, e não 404:
+    // docs/adr/0001-doador-inexistente.md. UNPROCESSABLE_CONTENT é o nome do
+    // 422 na RFC 9110; o antigo UNPROCESSABLE_ENTITY está deprecado no Spring 7.
+    @ExceptionHandler(DoadorInexistenteException.class)
+    public ResponseEntity<ProblemDetail> tratarDoadorInexistente(DoadorInexistenteException ex,
+                                                                 HttpServletRequest request) {
+        // O id vai como String, pelo mesmo motivo do 404 (sem separador de milhar).
+        return responder(HttpStatus.UNPROCESSABLE_CONTENT, "doador-inexistente",
+                mensagem("erro.doador-inexistente.titulo"),
+                mensagem("erro.doador-inexistente.detalhe", String.valueOf(ex.getIdDoador())),
+                request);
+    }
+
+    // 400: período invertido na listagem de doações (dataInicio depois de dataFim).
+    // As datas vão como String: saem no formato aaaa-mm-dd, o mesmo da URL.
+    @ExceptionHandler(PeriodoInvalidoException.class)
+    public ResponseEntity<ProblemDetail> tratarPeriodoInvalido(PeriodoInvalidoException ex,
+                                                               HttpServletRequest request) {
+        return responder(HttpStatus.BAD_REQUEST, "periodo-invalido",
+                mensagem("erro.periodo-invalido.titulo"),
+                mensagem("erro.periodo-invalido.detalhe",
+                        String.valueOf(ex.getDataInicio()), String.valueOf(ex.getDataFim())),
+                request);
+    }
+
     // ===================== Erros do cliente =====================
 
     // 400: Bean Validation (@Valid) recusou um ou mais campos.

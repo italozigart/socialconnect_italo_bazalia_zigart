@@ -45,7 +45,7 @@ final class BeneficiarioExemplos {
               "type": "https://socialconnect.api/errors/ordenacao-invalida",
               "title": "Ordenação inválida",
               "status": 400,
-              "detail": "Não é possível ordenar por \\"idade\\". Use um atributo do recurso, como nome.",
+              "detail": "Não é possível ordenar por \\"idade\\": o recurso não tem esse atributo.",
               "instance": "/api/v1/beneficiarios",
               "timestamp": "2026-10-03T22:30:00Z",
               "errors": []
@@ -69,7 +69,7 @@ final class BeneficiarioExemplos {
               "type": "https://socialconnect.api/errors/recurso-nao-encontrado",
               "title": "Recurso não encontrado",
               "status": 404,
-              "detail": "Beneficiário com id 99 não encontrado.",
+              "detail": "Beneficiário com id 99 não existe.",
               "instance": "/api/v1/beneficiarios/99",
               "timestamp": "2026-10-03T22:30:00Z",
               "errors": []
