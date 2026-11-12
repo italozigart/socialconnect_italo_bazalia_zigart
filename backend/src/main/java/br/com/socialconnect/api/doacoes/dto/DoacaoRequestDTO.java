@@ -1,6 +1,7 @@
 package br.com.socialconnect.api.doacoes.dto;
 
 import br.com.socialconnect.api.doacoes.model.TipoDoacao;
+import br.com.socialconnect.api.validation.DataNaoFutura;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
@@ -22,6 +23,8 @@ import java.time.LocalDate;
  *   <li>idDoador: o @NotNull cobre o campo ausente. Se o doador não existir,
  *       quem responde é o Service, com 422 (ADR 0001): a validação do DTO só
  *       confere o formato dos dados e não consulta o banco.</li>
+ *   <li>dataDoacao: o @NotNull cobre a data ausente, e a @DataNaoFutura
+ *       (validação customizada, feita em TDD) recusa uma data depois de hoje.</li>
  *   <li>valor: opcional. Quando vier, o @Positive espelha o CHECK (valor > 0)
  *       e o @Digits espelha o DECIMAL(10,2). Sem o @Digits, o banco
  *       arredondaria 10.555 para 10.56 sem avisar, e um valor com 9 dígitos
@@ -33,8 +36,8 @@ import java.time.LocalDate;
  * </ul>
  * Swagger: o name do @Schema é o do docs/openapi.yaml. O springdoc lê sozinho
  * o @NotNull (required), o @Positive (mínimo exclusivo 0) e o @Size
- * (maxLength), mas não o @Digits; por isso a regra das 2 casas decimais está
- * na descrição do campo valor.
+ * (maxLength), mas não o @Digits nem a @DataNaoFutura; por isso essas regras
+ * estão na descrição dos campos valor e dataDoacao.
  */
 @Schema(name = "DoacaoRequest", description = "Dados para registrar uma doação")
 public record DoacaoRequestDTO(
@@ -43,8 +46,10 @@ public record DoacaoRequestDTO(
         @NotNull(message = "{doacao.idDoador.obrigatorio}")
         Long idDoador,
 
-        @Schema(description = "Data em que a doação foi recebida (aaaa-mm-dd)", example = "2026-11-10")
+        @Schema(description = "Data em que a doação foi recebida (aaaa-mm-dd): hoje ou antes",
+                example = "2026-11-10")
         @NotNull(message = "{doacao.dataDoacao.obrigatoria}")
+        @DataNaoFutura
         LocalDate dataDoacao,
 
         @Schema(description = "Valor em reais, maior que zero e com até 2 casas decimais. Opcional.",
