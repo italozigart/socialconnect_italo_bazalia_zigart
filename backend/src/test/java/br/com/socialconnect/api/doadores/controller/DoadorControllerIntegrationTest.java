@@ -1,5 +1,6 @@
 package br.com.socialconnect.api.doadores.controller;
 
+import br.com.socialconnect.api.doacoes.repository.DoacaoRepository;
 import br.com.socialconnect.api.doadores.repository.DoadorRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,13 +23,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Testes de integração dos endpoints de doador, no molde do
  * BeneficiarioControllerIntegrationTest: aplicação inteira numa porta
- * aleatória, H2 em memória (sem Docker) e perfil "test". O Flyway roda a V1 e
- * a V3, e as requisições passam por HTTP real: Controller, @Valid, Service,
- * Repository, banco e GlobalExceptionHandler.
+ * aleatória, H2 em memória (sem Docker) e perfil "test". O Flyway roda as
+ * migrations (V1, V3 e V4), e as requisições passam por HTTP real:
+ * Controller, @Valid, Service, Repository, banco e GlobalExceptionHandler.
  * <p>
  * Cada teste começa com a tabela doadores vazia e cria os próprios dados pela
- * API. A classe usa o mesmo contexto do Spring (e o mesmo H2) que o teste de
- * beneficiário; cada classe limpa só a tabela que usa.
+ * API. A classe usa o mesmo contexto do Spring (e o mesmo H2) que os outros
+ * testes de integração. Desde a Etapa 8, a limpeza apaga também as doações,
+ * que apontam para os doadores (FK).
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -49,6 +51,10 @@ class DoadorControllerIntegrationTest {
     @Autowired
     private DoadorRepository repository;
 
+    // Só para a limpeza (ver limparBanco).
+    @Autowired
+    private DoacaoRepository doacaoRepository;
+
     private RestClient cliente;
 
     @BeforeEach
@@ -64,8 +70,10 @@ class DoadorControllerIntegrationTest {
 
     @BeforeEach
     void limparBanco() {
-        // Na Etapa 8, com doações apontando para doadores (FK), esta limpeza
-        // vai precisar apagar as doações antes.
+        // Doações antes dos doadores: com a FK da V4 (fk_doacoes_doador), o
+        // banco recusa apagar um doador que ainda tem doação. E o teste de
+        // doações deixa doações gravadas, porque só limpa antes de cada teste.
+        doacaoRepository.deleteAll();
         repository.deleteAll();
     }
 

@@ -13,7 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 class ApiApplicationTests {
 
     // Passa se o contexto inteiro sobe: beans, Flyway (todas as migrations
-    // aplicadas no H2, V1 e V3 na Etapa 7) e a validação do Hibernate
+    // aplicadas no H2: V1, V3 e V4 desde a Etapa 8) e a validação do Hibernate
     // (ddl-auto=validate) conferindo cada Entity com a sua tabela.
     @Test
     void contextLoads() {
