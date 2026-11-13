@@ -8,6 +8,11 @@ package br.com.socialconnect.api.doacoes.controller;
  * <p>
  * Os erros de validação vêm em ordem alfabética do campo, como o
  * GlobalExceptionHandler devolve.
+ * <p>
+ * O PUT e o PATCH (Etapa 9) reaproveitam os exemplos do POST, como o PUT do
+ * beneficiário: o corpo do erro é o mesmo, e só o instance mudaria
+ * (/api/v1/doacoes/1). O PATCH tem um exemplo próprio de validação, porque
+ * lá nenhum campo é obrigatório.
  */
 final class DoacaoExemplos {
 
@@ -26,6 +31,21 @@ final class DoacaoExemplos {
                 { "field": "dataDoacao", "message": "A data não pode estar no futuro. Informe a data de hoje ou uma data passada." },
                 { "field": "idDoador", "message": "O doador é obrigatório: informe o idDoador." },
                 { "field": "tipo", "message": "O tipo é obrigatório: ALIMENTO, ROUPA ou FINANCEIRA." },
+                { "field": "valor", "message": "O valor deve ser maior que zero." }
+              ]
+            }
+            """;
+
+    static final String DADOS_INVALIDOS_PATCH = """
+            {
+              "type": "https://socialconnect.api/errors/validacao",
+              "title": "Dados inválidos",
+              "status": 400,
+              "detail": "Um ou mais campos são inválidos. Veja a lista em errors.",
+              "instance": "/api/v1/doacoes/1",
+              "timestamp": "2026-11-12T22:30:00Z",
+              "errors": [
+                { "field": "dataDoacao", "message": "A data não pode estar no futuro. Informe a data de hoje ou uma data passada." },
                 { "field": "valor", "message": "O valor deve ser maior que zero." }
               ]
             }
