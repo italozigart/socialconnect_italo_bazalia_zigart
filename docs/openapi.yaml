@@ -14,6 +14,11 @@
 # - GET por id, Location no 201 e as respostas 400, 404 e 422 (doador
 #   inexistente: decisão em docs/adr/0001-doador-inexistente.md).
 # - DoacaoResponse com a descricao, e PageDoacaoResponse com first e last.
+# Etapa 9 (issue #18): PUT, PATCH e DELETE em /api/v1/doacoes/{idDoacao}.
+# - PUT com o DoacaoRequest do POST (substituição total) e PATCH com o novo
+#   DoacaoPatch (só os campos enviados e não nulos mudam).
+# - Respostas 400, 404 e 422; o 422 (doador inexistente) vale agora também no
+#   PUT e no PATCH. DELETE com 204, 400 e 404.
 # Produtos mantém o texto original até ser implementado.
 openapi: 3.1.0
 info:
@@ -382,6 +387,119 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
+    put:
+      tags:
+        - Doações
+      summary: Atualiza uma doação (substituição total)
+      operationId: atualizarDoacao
+      parameters:
+        - name: idDoacao
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoacaoRequest'
+      responses:
+        '200':
+          description: Doação atualizada (valor e descricao ausentes no JSON viram null)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoacaoResponse'
+        '400':
+          description: Dados inválidos, tipo fora da lista, JSON malformado ou id inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Doação não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Doador inexistente (o idDoador não é de nenhum doador cadastrado)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    patch:
+      tags:
+        - Doações
+      summary: Atualiza parcialmente uma doação
+      operationId: atualizarParcialmenteDoacao
+      parameters:
+        - name: idDoacao
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoacaoPatch'
+      responses:
+        '200':
+          description: Doação atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoacaoResponse'
+        '400':
+          description: Campo inválido, tipo fora da lista, JSON malformado ou id inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Doação não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Doador inexistente (o idDoador enviado não é de nenhum doador cadastrado)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    delete:
+      tags:
+        - Doações
+      summary: Remove uma doação
+      operationId: deletarDoacao
+      parameters:
+        - name: idDoacao
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Doação removida com sucesso (o doador continua cadastrado)
+        '400':
+          description: Id inválido (não numérico ou acima do limite)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Doação não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
 
   /api/v1/doadores:
     get:
@@ -633,6 +751,30 @@ components:
           exclusiveMinimum: 0
           maximum: 99999999.99
           description: Opcional. Maior que zero, com até 2 casas decimais
+        tipo:
+          $ref: '#/components/schemas/TipoDoacao'
+        descricao:
+          type: string
+          maxLength: 500
+
+    DoacaoPatch:
+      type: object
+      description: Só os campos enviados e não nulos mudam. Descrição em branco apaga a descrição; para apagar o valor, use o PUT.
+      properties:
+        idDoador:
+          type: integer
+          format: int64
+          description: Se vier, precisa ser de um doador cadastrado
+        dataDoacao:
+          type: string
+          format: date
+          description: Hoje ou uma data passada
+        valor:
+          type: number
+          format: decimal
+          exclusiveMinimum: 0
+          maximum: 99999999.99
+          description: Maior que zero, com até 2 casas decimais
         tipo:
           $ref: '#/components/schemas/TipoDoacao'
         descricao:
