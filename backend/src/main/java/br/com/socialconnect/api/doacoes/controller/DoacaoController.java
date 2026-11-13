@@ -1,5 +1,6 @@
 package br.com.socialconnect.api.doacoes.controller;
 
+import br.com.socialconnect.api.doacoes.dto.DoacaoPatchDTO;
 import br.com.socialconnect.api.doacoes.dto.DoacaoRequestDTO;
 import br.com.socialconnect.api.doacoes.dto.DoacaoResponseDTO;
 import br.com.socialconnect.api.doacoes.model.TipoDoacao;
@@ -21,9 +22,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -41,7 +45,10 @@ import java.time.LocalDate;
  *       (DoacaoExemplos); as de sucesso usam o tipo de retorno do método;</li>
  *   <li>operationId e summary iguais aos do docs/openapi.yaml.</li>
  * </ul>
- * Sem PUT, PATCH e DELETE: alteração e remoção são a Etapa 9.
+ * PUT, PATCH e DELETE (Etapa 9) seguem o molde do beneficiário: PUT com
+ * substituição total, PATCH só com os campos enviados e DELETE com busca antes
+ * (204 ou 404). No PUT e no PATCH, a ordem dos erros é: id da URL ou corpo
+ * inválidos (400), doação inexistente (404) e doador inexistente (422).
  */
 @RestController
 @RequestMapping("/api/v1/doacoes")
@@ -160,5 +167,112 @@ public class DoacaoController {
         DoacaoResponseDTO criada = service.criar(dto);
         URI location = URI.create("/api/v1/doacoes/" + criada.idDoacao());
         return ResponseEntity.created(location).body(criada);
+    }
+
+    // PUT: substituição total, com as regras do POST (o mesmo DoacaoRequestDTO
+    // e o mesmo @Valid). 200 com a doação atualizada, como no beneficiário.
+    // Ordem das checagens: o id da URL (400 se não for número), o JSON e o
+    // @Valid (400), a doação da URL (404) e o doador do corpo (422). Um corpo
+    // inválido não chega a consultar o banco, e o doador só é procurado
+    // depois de a doação ser encontrada.
+    @PutMapping("/{idDoacao}")
+    @Operation(operationId = "atualizarDoacao", summary = "Atualiza uma doação (substituição total)",
+            description = "Substitui os cinco campos enviáveis, com as regras do POST: valor e descricao "
+                    + "ausentes no JSON viram null. O idDoacao é o da URL; se vier no JSON, é ignorado. "
+                    + "Ordem dos erros: 400 (id, JSON ou campos), 404 (doação) e 422 (doador).")
+    @ApiResponse(responseCode = "200", description = "Doação atualizada")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos (lista os campos em errors), "
+            + "tipo fora da lista, JSON malformado ou id inválido",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = {
+                            @ExampleObject(name = "Campos inválidos", value = DoacaoExemplos.DADOS_INVALIDOS),
+                            @ExampleObject(name = "Tipo fora da lista", value = DoacaoExemplos.CORPO_INVALIDO),
+                            @ExampleObject(name = "Id inválido", value = DoacaoExemplos.ID_INVALIDO)
+                    }))
+    @ApiResponse(responseCode = "404", description = "Doação não encontrada",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = DoacaoExemplos.NAO_ENCONTRADO)))
+    @ApiResponse(responseCode = "422",
+            description = "Doador inexistente: o idDoador não é de nenhum doador cadastrado",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = DoacaoExemplos.DOADOR_INEXISTENTE)))
+    @ApiResponse(responseCode = "500", description = "Erro inesperado",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = DoacaoExemplos.ERRO_INTERNO)))
+    public ResponseEntity<DoacaoResponseDTO> atualizar(
+            @Parameter(description = "Id da doação", example = "1")
+            @PathVariable("idDoacao") Long idDoacao,
+            @Valid @RequestBody DoacaoRequestDTO dto) {
+        return ResponseEntity.ok(service.atualizar(idDoacao, dto));
+    }
+
+    // PATCH: só os campos enviados e não nulos mudam (DoacaoPatchDTO). O @Valid
+    // confere só os campos que vieram: a data continua sem poder estar no
+    // futuro, e o valor, maior que zero. O idDoador, se vier, passa pela mesma
+    // conferência do POST (422). Mesma ordem de erros do PUT.
+    @PatchMapping("/{idDoacao}")
+    @Operation(operationId = "atualizarParcialmenteDoacao", summary = "Atualiza parcialmente uma doação",
+            description = "Só os campos enviados e não nulos mudam, com as regras do POST: a data continua "
+                    + "sem poder estar no futuro. Se o idDoador vier, o doador precisa estar cadastrado "
+                    + "(senão, 422). Descrição em branco apaga a descrição; para apagar o valor, use o PUT. "
+                    + "Ordem dos erros: 400, 404 e 422, como no PUT.")
+    @ApiResponse(responseCode = "200", description = "Doação atualizada")
+    @ApiResponse(responseCode = "400", description = "Campo inválido (data no futuro, valor ou tamanho "
+            + "da descrição), tipo fora da lista, JSON malformado ou id inválido",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = {
+                            @ExampleObject(name = "Campos inválidos", value = DoacaoExemplos.DADOS_INVALIDOS_PATCH),
+                            @ExampleObject(name = "Tipo fora da lista", value = DoacaoExemplos.CORPO_INVALIDO),
+                            @ExampleObject(name = "Id inválido", value = DoacaoExemplos.ID_INVALIDO)
+                    }))
+    @ApiResponse(responseCode = "404", description = "Doação não encontrada",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = DoacaoExemplos.NAO_ENCONTRADO)))
+    @ApiResponse(responseCode = "422",
+            description = "Doador inexistente: o idDoador enviado não é de nenhum doador cadastrado",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = DoacaoExemplos.DOADOR_INEXISTENTE)))
+    @ApiResponse(responseCode = "500", description = "Erro inesperado",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = DoacaoExemplos.ERRO_INTERNO)))
+    public ResponseEntity<DoacaoResponseDTO> atualizarParcial(
+            @Parameter(description = "Id da doação", example = "1")
+            @PathVariable("idDoacao") Long idDoacao,
+            @Valid @RequestBody DoacaoPatchDTO dto) {
+        return ResponseEntity.ok(service.atualizarParcial(idDoacao, dto));
+    }
+
+    // 204 No Content: sucesso sem corpo (content = @Content deixa a resposta
+    // sem schema). O segundo DELETE do mesmo id dá 404: a doação já não existe.
+    @DeleteMapping("/{idDoacao}")
+    @Operation(operationId = "deletarDoacao", summary = "Remove uma doação",
+            description = "Remove só a doação; o doador continua cadastrado. Um segundo DELETE com o mesmo "
+                    + "id responde 404.")
+    @ApiResponse(responseCode = "204", description = "Doação removida, sem corpo", content = @Content)
+    @ApiResponse(responseCode = "400", description = "Id inválido: não numérico ou acima do limite",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = DoacaoExemplos.ID_INVALIDO)))
+    @ApiResponse(responseCode = "404", description = "Doação não encontrada",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = DoacaoExemplos.NAO_ENCONTRADO)))
+    @ApiResponse(responseCode = "500", description = "Erro inesperado",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = @ExampleObject(value = DoacaoExemplos.ERRO_INTERNO)))
+    public ResponseEntity<Void> deletar(
+            @Parameter(description = "Id da doação", example = "1")
+            @PathVariable("idDoacao") Long idDoacao) {
+        service.deletar(idDoacao);
+        return ResponseEntity.noContent().build();
     }
 }

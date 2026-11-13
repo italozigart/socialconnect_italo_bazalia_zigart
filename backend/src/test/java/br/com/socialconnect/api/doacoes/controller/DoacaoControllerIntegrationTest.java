@@ -34,6 +34,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Cada teste começa com as tabelas doacoes e doadores vazias e um doador
  * gravado, porque toda doação precisa de um (FK). As doações de cada teste
  * são criadas pela API.
+ * <p>
+ * PUT, PATCH e DELETE (Etapa 9) seguem o molde do teste de beneficiário. Os
+ * testes de alteração releem a doação pelo GET: no sucesso, para provar que a
+ * mudança foi gravada; nos erros, para provar que nada mudou no banco.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -115,6 +119,33 @@ class DoacaoControllerIntegrationTest {
                 .toEntity(JSON_OBJETO);
     }
 
+    private ResponseEntity<Map<String, Object>> put(Object idDoacao, String json) {
+        return cliente.put()
+                .uri(URL + "/{id}", idDoacao)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(json)
+                .retrieve()
+                .toEntity(JSON_OBJETO);
+    }
+
+    private ResponseEntity<Map<String, Object>> patch(Object idDoacao, String json) {
+        return cliente.patch()
+                .uri(URL + "/{id}", idDoacao)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(json)
+                .retrieve()
+                .toEntity(JSON_OBJETO);
+    }
+
+    // No 204 a resposta não tem corpo, e o toEntity devolve o corpo nulo; no
+    // 404, ele lê o Problem Details.
+    private ResponseEntity<Map<String, Object>> delete(Object idDoacao) {
+        return cliente.delete()
+                .uri(URL + "/{id}", idDoacao)
+                .retrieve()
+                .toEntity(JSON_OBJETO);
+    }
+
     // JSON de uma doação do doador gravado, com valor de 150,50.
     private String doacaoJson(String dataDoacao, String tipo, String descricao) {
         return """
@@ -128,11 +159,12 @@ class DoacaoControllerIntegrationTest {
                 """.formatted(idDoador, dataDoacao, tipo, descricao);
     }
 
-    // Cria pela API uma doação do doador gravado. A descrição identifica a
-    // doação nas listagens.
-    private void criar(String dataDoacao, String tipo, String descricao) {
+    // Cria pela API uma doação do doador gravado e devolve o id gerado. A
+    // descrição identifica a doação nas listagens.
+    private Object criar(String dataDoacao, String tipo, String descricao) {
         ResponseEntity<Map<String, Object>> resposta = post(doacaoJson(dataDoacao, tipo, descricao));
         assertThat(resposta.getStatusCode().value()).isEqualTo(201);
+        return resposta.getBody().get("idDoacao");
     }
 
     // Cinco doações cadastradas fora de ordem. As pontas de outubro (01/10 e
@@ -295,7 +327,7 @@ class DoacaoControllerIntegrationTest {
         assertThat(corpo.get("type")).isEqualTo(ERROS + "doador-inexistente");
         assertThat(corpo.get("title")).isEqualTo("Doador inexistente");
         assertThat(corpo.get("detail"))
-                .isEqualTo("Não existe doador com id 99999. Cadastre o doador antes de registrar a doação.");
+                .isEqualTo("Não existe doador com id 99999. Informe o id de um doador já cadastrado.");
         assertThat(corpo.get("instance")).isEqualTo(URL);
 
         // ASSERT: nada foi gravado
@@ -428,5 +460,244 @@ class DoacaoControllerIntegrationTest {
         assertThat(corpo.get("type")).isEqualTo(ERROS + "parametro-invalido");
         assertThat(corpo.get("detail")).isEqualTo("O parâmetro \"tipo\" não aceita o valor \"DINHEIRO\". "
                 + "Valores aceitos: ALIMENTO, ROUPA, FINANCEIRA.");
+    }
+
+    // ===================== PUT =====================
+
+    @Test
+    @DisplayName("PUT - deve substituir os dados e manter o id")
+    void deveSubstituirDadosQuandoPutValido() {
+        // ARRANGE: doação de alimento, com valor e descrição
+        Object id = criar("2026-11-10", "ALIMENTO", "Cestas básicas");
+        String json = """
+                {"idDoador": %d, "dataDoacao": "2026-11-05", "tipo": "ROUPA"}
+                """.formatted(idDoador);
+
+        // ACT: PUT sem valor e sem descrição
+        ResponseEntity<Map<String, Object>> resposta = put(id, json);
+
+        // ASSERT: substituição total, então os campos ausentes viram null
+        assertThat(resposta.getStatusCode().value()).isEqualTo(200);
+        Map<String, Object> corpo = resposta.getBody();
+        assertThat(corpo).isNotNull();
+        assertThat(corpo.get("idDoacao")).isEqualTo(id);
+        assertThat(corpo.get("dataDoacao")).isEqualTo("2026-11-05");
+        assertThat(corpo.get("tipo")).isEqualTo("ROUPA");
+        assertThat(corpo.get("valor")).isNull();
+        assertThat(corpo.get("descricao")).isNull();
+
+        // ASSERT: relido do banco por um GET, para provar que a mudança foi gravada
+        Map<String, Object> gravada = get(id).getBody();
+        assertThat(gravada).isNotNull();
+        assertThat(numero(gravada.get("idDoador"))).isEqualTo(idDoador);
+        assertThat(gravada.get("dataDoacao")).isEqualTo("2026-11-05");
+        assertThat(gravada.get("tipo")).isEqualTo("ROUPA");
+        assertThat(gravada.get("valor")).isNull();
+        assertThat(gravada.get("descricao")).isNull();
+    }
+
+    @Test
+    @DisplayName("PUT - deve retornar 400, e não 404, quando o corpo é inválido e a doação não existe")
+    void deveRetornar400AntesDo404QuandoPutInvalidoEmDoacaoInexistente() {
+        // ACT: corpo vazio num id que não existe
+        ResponseEntity<Map<String, Object>> resposta = put(99999, "{}");
+
+        // ASSERT: o @Valid roda antes do Service, então vem o 400 com os três
+        // campos obrigatórios do POST, e não o 404
+        assertThat(resposta.getStatusCode().value()).isEqualTo(400);
+        Map<String, Object> corpo = resposta.getBody();
+        assertThat(corpo).isNotNull();
+        assertThat(corpo.get("type")).isEqualTo(ERROS + "validacao");
+        assertThat(corpo.get("errors")).isEqualTo(List.of(
+                Map.of("field", "dataDoacao", "message", "A data da doação é obrigatória."),
+                Map.of("field", "idDoador", "message", "O doador é obrigatório: informe o idDoador."),
+                Map.of("field", "tipo", "message", "O tipo é obrigatório: ALIMENTO, ROUPA ou FINANCEIRA.")
+        ));
+    }
+
+    @Test
+    @DisplayName("PUT - deve retornar 404 quando a doação não existe")
+    void deveRetornar404QuandoPutEmDoacaoInexistente() {
+        // ARRANGE: corpo válido, com o doador gravado
+        String json = doacaoJson("2026-11-10", "ALIMENTO", "Cestas básicas");
+
+        // ACT: tabela vazia, então o id 99999 não existe
+        ResponseEntity<Map<String, Object>> resposta = put(99999, json);
+
+        // ASSERT
+        assertThat(resposta.getStatusCode().value()).isEqualTo(404);
+        Map<String, Object> corpo = resposta.getBody();
+        assertThat(corpo).isNotNull();
+        assertThat(corpo.get("type")).isEqualTo(ERROS + "recurso-nao-encontrado");
+        assertThat(corpo.get("detail")).isEqualTo("Doação com id 99999 não existe.");
+        assertThat(corpo.get("instance")).isEqualTo(URL + "/99999");
+
+        // ASSERT: o PUT não cria a doação que não existe
+        assertThat(repository.count()).isZero();
+    }
+
+    @Test
+    @DisplayName("PUT - deve retornar 422 e manter a doação quando o doador não existe")
+    void deveRetornar422QuandoPutComDoadorInexistente() {
+        // ARRANGE
+        Object id = criar("2026-11-10", "ALIMENTO", "Cestas básicas");
+        String json = """
+                {"idDoador": 99999, "dataDoacao": "2026-11-05", "tipo": "ROUPA"}
+                """;
+
+        // ACT
+        ResponseEntity<Map<String, Object>> resposta = put(id, json);
+
+        // ASSERT: 422 com o texto que vale para POST, PUT e PATCH
+        assertThat(resposta.getStatusCode().value()).isEqualTo(422);
+        Map<String, Object> corpo = resposta.getBody();
+        assertThat(corpo).isNotNull();
+        assertThat(corpo.get("type")).isEqualTo(ERROS + "doador-inexistente");
+        assertThat(corpo.get("detail"))
+                .isEqualTo("Não existe doador com id 99999. Informe o id de um doador já cadastrado.");
+        assertThat(corpo.get("instance")).isEqualTo(URL + "/" + id);
+
+        // ASSERT: a doação continua como estava
+        Map<String, Object> gravada = get(id).getBody();
+        assertThat(gravada).isNotNull();
+        assertThat(numero(gravada.get("idDoador"))).isEqualTo(idDoador);
+        assertThat(gravada.get("dataDoacao")).isEqualTo("2026-11-10");
+        assertThat(gravada.get("tipo")).isEqualTo("ALIMENTO");
+        assertThat(gravada.get("descricao")).isEqualTo("Cestas básicas");
+    }
+
+    // ===================== PATCH =====================
+
+    @Test
+    @DisplayName("PATCH - deve alterar só o valor e preservar os outros campos")
+    void devePreservarCamposNaoEnviadosQuandoPatch() {
+        // ARRANGE
+        Object id = criar("2026-11-10", "ALIMENTO", "Cestas básicas");
+
+        // ACT: PATCH só com o valor
+        ResponseEntity<Map<String, Object>> resposta = patch(id, """
+                {"valor": 80.25}
+                """);
+
+        // ASSERT
+        assertThat(resposta.getStatusCode().value()).isEqualTo(200);
+
+        // ASSERT: relido do banco por um GET, para provar que a mudança foi gravada
+        Map<String, Object> gravada = get(id).getBody();
+        assertThat(gravada).isNotNull();
+        assertThat(decimal(gravada.get("valor"))).isEqualByComparingTo(new BigDecimal("80.25"));
+        assertThat(numero(gravada.get("idDoador"))).isEqualTo(idDoador);
+        assertThat(gravada.get("dataDoacao")).isEqualTo("2026-11-10");
+        assertThat(gravada.get("tipo")).isEqualTo("ALIMENTO");
+        assertThat(gravada.get("descricao")).isEqualTo("Cestas básicas");
+    }
+
+    @Test
+    @DisplayName("PATCH - deve trocar o doador quando o idDoador é de outro doador cadastrado")
+    void deveTrocarDoadorQuandoPatchTrazOutroDoador() {
+        // ARRANGE: uma doação do doador gravado e um segundo doador
+        Object id = criar("2026-11-10", "ALIMENTO", "Cestas básicas");
+        Long outroDoador = doadorRepository.save(Doador.builder()
+                        .nome("Ana Souza")
+                        .tipo(TipoDoador.PESSOA_FISICA)
+                        .build())
+                .getIdDoador();
+
+        // ACT
+        ResponseEntity<Map<String, Object>> resposta = patch(id, """
+                {"idDoador": %d}
+                """.formatted(outroDoador));
+
+        // ASSERT: o doador mudou no banco, e o resto não
+        assertThat(resposta.getStatusCode().value()).isEqualTo(200);
+        Map<String, Object> gravada = get(id).getBody();
+        assertThat(gravada).isNotNull();
+        assertThat(numero(gravada.get("idDoador"))).isEqualTo(outroDoador);
+        assertThat(gravada.get("dataDoacao")).isEqualTo("2026-11-10");
+        assertThat(gravada.get("descricao")).isEqualTo("Cestas básicas");
+    }
+
+    @Test
+    @DisplayName("PATCH - deve retornar 400 quando a data está no futuro")
+    void deveRetornar400QuandoPatchComDataFutura() {
+        // ARRANGE: daqui a 10 dias, como no teste do dojo
+        Object id = criar("2026-11-10", "ALIMENTO", "Cestas básicas");
+        String dataFutura = LocalDate.now().plusDays(10).toString();
+
+        // ACT
+        ResponseEntity<Map<String, Object>> resposta = patch(id, """
+                {"dataDoacao": "%s"}
+                """.formatted(dataFutura));
+
+        // ASSERT: a @DataNaoFutura vale também no PATCH, só no campo que veio
+        assertThat(resposta.getStatusCode().value()).isEqualTo(400);
+        Map<String, Object> corpo = resposta.getBody();
+        assertThat(corpo).isNotNull();
+        assertThat(corpo.get("type")).isEqualTo(ERROS + "validacao");
+        List<?> erros = (List<?>) corpo.get("errors");
+        assertThat(erros).hasSize(1);
+        Map<?, ?> erro = (Map<?, ?>) erros.get(0);
+        assertThat(erro.get("field")).isEqualTo("dataDoacao");
+        assertThat((String) erro.get("message")).contains("futuro");
+
+        // ASSERT: a data gravada não mudou
+        Map<String, Object> gravada = get(id).getBody();
+        assertThat(gravada).isNotNull();
+        assertThat(gravada.get("dataDoacao")).isEqualTo("2026-11-10");
+    }
+
+    @Test
+    @DisplayName("PATCH - deve retornar 422 e manter a doação quando o doador não existe")
+    void deveRetornar422QuandoPatchComDoadorInexistente() {
+        // ARRANGE
+        Object id = criar("2026-11-10", "ALIMENTO", "Cestas básicas");
+
+        // ACT: doador inexistente junto com um valor válido
+        ResponseEntity<Map<String, Object>> resposta = patch(id, """
+                {"idDoador": 99999, "valor": 80.25}
+                """);
+
+        // ASSERT
+        assertThat(resposta.getStatusCode().value()).isEqualTo(422);
+        Map<String, Object> corpo = resposta.getBody();
+        assertThat(corpo).isNotNull();
+        assertThat(corpo.get("type")).isEqualTo(ERROS + "doador-inexistente");
+        assertThat(corpo.get("detail"))
+                .isEqualTo("Não existe doador com id 99999. Informe o id de um doador já cadastrado.");
+
+        // ASSERT: nada foi gravado, nem o valor, que veio válido
+        Map<String, Object> gravada = get(id).getBody();
+        assertThat(gravada).isNotNull();
+        assertThat(numero(gravada.get("idDoador"))).isEqualTo(idDoador);
+        assertThat(decimal(gravada.get("valor"))).isEqualByComparingTo(new BigDecimal("150.50"));
+    }
+
+    // ===================== DELETE =====================
+
+    @Test
+    @DisplayName("DELETE - deve retornar 204, e o segundo DELETE deve retornar 404")
+    void deveRetornar204EDepois404QuandoExcluir() {
+        // ARRANGE
+        Object id = criar("2026-11-10", "ALIMENTO", "Cestas básicas");
+
+        // ACT: o mesmo DELETE duas vezes
+        ResponseEntity<Map<String, Object>> primeiro = delete(id);
+        ResponseEntity<Map<String, Object>> segundo = delete(id);
+
+        // ASSERT: o primeiro responde 204 sem corpo, e a doação não existe mais
+        assertThat(primeiro.getStatusCode().value()).isEqualTo(204);
+        assertThat(primeiro.getBody()).isNull();
+        assertThat(get(id).getStatusCode().value()).isEqualTo(404);
+        assertThat(repository.count()).isZero();
+
+        // ASSERT: o segundo não acha a doação (404 em Problem Details)
+        assertThat(segundo.getStatusCode().value()).isEqualTo(404);
+        Map<String, Object> corpo = segundo.getBody();
+        assertThat(corpo).isNotNull();
+        assertThat(corpo.get("type")).isEqualTo(ERROS + "recurso-nao-encontrado");
+        assertThat(corpo.get("detail")).isEqualTo("Doação com id " + id + " não existe.");
+
+        // ASSERT: apagar a doação não apaga o doador
+        assertThat(doadorRepository.existsById(idDoador)).isTrue();
     }
 }

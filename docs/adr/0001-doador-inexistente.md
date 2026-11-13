@@ -1,9 +1,10 @@
-# ADR 0001 — Doador inexistente no registro de doação: 422, e não 404
+# ADR 0001 — Doador inexistente no corpo de uma doação: 422, e não 404
 
-- **Status:** aceita
+- **Status:** aceita; estendida ao PUT e ao PATCH (ver "Atualização — Etapa 9")
 - **Data:** 12/11/2026
-- **Issue:** #17 (Etapa 8 — Doação: registro, listagem com filtros e consulta)
-- **Uso de IA:** análise feita com apoio de IA, registrada no `AI_USAGE.md` (sessão #24)
+- **Issue:** #17 (Etapa 8 — Doação: registro, listagem com filtros e consulta);
+  atualização na #18 (Etapa 9 — Doação: alterar e remover)
+- **Uso de IA:** análise feita com apoio de IA, registrada no `AI_USAGE.md` (sessões #24 e #25)
 
 ## Contexto
 
@@ -38,15 +39,18 @@ devolve. A issue #17 pede que a escolha entre 404 e 422 fique registrada aqui.
 
 - `type`: `https://socialconnect.api/errors/doador-inexistente`
 - `title`: `Doador inexistente`
-- `detail`: `Não existe doador com id 99. Cadastre o doador antes de registrar a doação.`
+- `detail`: `Não existe doador com id 99. Informe o id de um doador já cadastrado.`
+  (texto da Etapa 9; o original falava em "registrar a doação", ver
+  "Atualização — Etapa 9")
 
 Como funciona:
 
 1. O `@Valid` confere o formato. Se algum campo falhar, a resposta é 400, e o
    banco nem é consultado.
-2. O `DoacaoService.criar` busca o doador com `DoadorRepository.findById`. Se
-   não achar, lança `DoadorInexistenteException`, e o `GlobalExceptionHandler`
-   responde 422.
+2. O `DoacaoService` busca o doador com `DoadorRepository.findById` (método
+   `buscarDoador`, usado pelo `criar` e, desde a Etapa 9, pelo `atualizar` e
+   pelo `atualizarParcial`). Se não achar, lança `DoadorInexistenteException`,
+   e o `GlobalExceptionHandler` responde 422.
 3. Se achar, a doação é gravada apontando para esse doador. A FK da V4 continua
    como segunda barreira.
 
@@ -70,6 +74,45 @@ existe: aí, o id que falta está na URL.
   `DoadorInexistenteException`.
 - O 422 está documentado no Swagger (`DoacaoController`) e no
   `docs/openapi.yaml`.
+
+## Atualização — Etapa 9 (issue #18): PUT e PATCH
+
+Com o PUT e o PATCH de doação, o mesmo caso aparece fora do POST: o corpo é
+válido, mas aponta para um doador que não existe. A decisão não muda, e o 422
+passa a valer nas três operações:
+
+| Operação | Quando o doador é conferido | Doador inexistente |
+|---|---|---|
+| `POST /api/v1/doacoes` | sempre (o `idDoador` é obrigatório) | 422 |
+| `PUT /api/v1/doacoes/{idDoacao}` | sempre (mesmo DTO e mesmas regras do POST) | 422 |
+| `PATCH /api/v1/doacoes/{idDoacao}` | só quando o `idDoador` vem no corpo | 422 |
+
+Ordem das checagens no PUT e no PATCH:
+
+1. id da URL que não é número, JSON malformado ou campo recusado pelo
+   `@Valid`: **400**, sem consultar o banco;
+2. doação da URL inexistente: **404**, e o doador nem é procurado;
+3. doador do corpo inexistente: **422**, antes de qualquer campo da doação ser
+   alterado.
+
+O 404 vem antes do 422 porque a doação da URL é o alvo da requisição: se ela
+não existe, não há o que processar, e o cliente precisa saber primeiro que
+errou o endereço.
+
+Mudanças que acompanham a extensão:
+
+- O título deste ADR passou de "no registro de doação" para "no corpo de uma
+  doação", e o `detail` deixou de falar em "registrar a doação", que só servia
+  para o POST.
+- O `SELECT` a mais da busca do doador passa a acontecer em todo PUT e no
+  PATCH que traz o `idDoador`.
+- O `DELETE /api/v1/doacoes/{idDoacao}` não consulta o doador: apagar a doação
+  não mexe nele.
+- Corrida: continua sem acontecer, porque a API ainda não tem DELETE de
+  doador. No PUT e no PATCH, o UPDATE só vai ao banco no commit; se um dia
+  houver DELETE de doador, transformar a `DataIntegrityViolationException` em
+  `DoadorInexistenteException` vai exigir o `saveAndFlush`, como no PUT do
+  beneficiário.
 
 ## Referências
 
