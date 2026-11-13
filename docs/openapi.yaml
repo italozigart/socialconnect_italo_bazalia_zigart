@@ -19,6 +19,12 @@
 #   DoacaoPatch (só os campos enviados e não nulos mudam).
 # - Respostas 400, 404 e 422; o 422 (doador inexistente) vale agora também no
 #   PUT e no PATCH. DELETE com 204, 400 e 404.
+# Etapa 10 (issue #19): o front-end (frontend/) consome a listagem de beneficiários.
+# - BeneficiarioResponse: telefone, endereco e situacaoVulnerabilidade como
+#   [string, 'null'], porque a API devolve null quando não foram informados.
+# - BeneficiarioResponse e PageBeneficiarioResponse com required: os campos vêm
+#   sempre no JSON (mesmo com null). Os tipos Beneficiario e Page<T> do front
+#   seguem estes dois schemas.
 # Produtos mantém o texto original até ser implementado.
 openapi: 3.1.0
 info:
@@ -674,6 +680,14 @@ components:
 
     BeneficiarioResponse:
       type: object
+      required:
+        - idBeneficiario
+        - nome
+        - cpf
+        - telefone
+        - endereco
+        - situacaoVulnerabilidade
+        - dataCadastro
       properties:
         idBeneficiario:
           type: integer
@@ -683,11 +697,14 @@ components:
         cpf:
           type: string
         telefone:
-          type: string
+          type: [string, 'null']
+          description: Vem null quando não foi informado no cadastro
         endereco:
-          type: string
+          type: [string, 'null']
+          description: Vem null quando não foi informado no cadastro
         situacaoVulnerabilidade:
-          type: string
+          type: [string, 'null']
+          description: Vem null quando não foi informada no cadastro
         dataCadastro:
           type: string
           format: date
@@ -710,6 +727,12 @@ components:
 
     PageBeneficiarioResponse:
       type: object
+      required:
+        - content
+        - totalElements
+        - totalPages
+        - first
+        - last
       properties:
         content:
           type: array
