@@ -48,7 +48,7 @@ final class DoacaoExemplos {
               "type": "https://socialconnect.api/errors/doador-inexistente",
               "title": "Doador inexistente",
               "status": 422,
-              "detail": "Não existe doador com id 99. Cadastre o doador antes de registrar a doação.",
+              "detail": "Não existe doador com id 99. Informe o id de um doador já cadastrado.",
               "instance": "/api/v1/doacoes",
               "timestamp": "2026-11-12T22:30:00Z",
               "errors": []

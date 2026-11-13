@@ -295,7 +295,7 @@ class DoacaoControllerIntegrationTest {
         assertThat(corpo.get("type")).isEqualTo(ERROS + "doador-inexistente");
         assertThat(corpo.get("title")).isEqualTo("Doador inexistente");
         assertThat(corpo.get("detail"))
-                .isEqualTo("Não existe doador com id 99999. Cadastre o doador antes de registrar a doação.");
+                .isEqualTo("Não existe doador com id 99999. Informe o id de um doador já cadastrado.");
         assertThat(corpo.get("instance")).isEqualTo(URL);
 
         // ASSERT: nada foi gravado
