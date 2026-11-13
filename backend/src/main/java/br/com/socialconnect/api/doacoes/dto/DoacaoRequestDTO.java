@@ -12,10 +12,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Dados que o cliente pode enviar no POST de doação.
+ * Dados que o cliente envia no POST e no PUT de doação.
  * <p>
- * Sem idDoacao: o id é do servidor. Se vier no JSON, o Jackson descarta,
- * como nos outros Request DTOs.
+ * No PUT (substituição total), estes campos substituem todos os da doação:
+ * valor e descricao ausentes no JSON viram null. Por isso o PUT tem as mesmas
+ * regras do POST: é o mesmo DTO, com o mesmo @Valid.
+ * <p>
+ * Sem idDoacao: o id é do servidor (no PUT, o da URL). Se vier no JSON, o
+ * Jackson descarta, como nos outros Request DTOs.
  * <p>
  * Bean Validation: só vale com o @Valid no Controller. Limites da V4; as
  * mensagens são chaves do messages.properties.
@@ -39,7 +43,7 @@ import java.time.LocalDate;
  * (maxLength), mas não o @Digits nem a @DataNaoFutura; por isso essas regras
  * estão na descrição dos campos valor e dataDoacao.
  */
-@Schema(name = "DoacaoRequest", description = "Dados para registrar uma doação")
+@Schema(name = "DoacaoRequest", description = "Dados para registrar (POST) ou substituir (PUT) uma doação")
 public record DoacaoRequestDTO(
 
         @Schema(description = "Id de um doador já cadastrado", example = "1")
