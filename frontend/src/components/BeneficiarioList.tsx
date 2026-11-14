@@ -12,9 +12,10 @@ function formatarCpf(cpf: string): string {
   return cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')
 }
 
-// Telefone: null quando não foi informado. A API de beneficiário grava o texto
-// como veio, então "" ou "   " também são possíveis. O ?.trim() devolve
-// undefined para null e "" para texto em branco; nos dois casos, o || mostra
+// Telefone: null quando não foi informado. Desde a Etapa 11 a API grava o
+// telefone em branco ("" ou "   ") como null; antes ela gravava o texto como
+// veio, e o ?.trim() continua cobrindo esse caso. O ?.trim() devolve undefined
+// para null e "" para texto em branco; nos dois casos, o || mostra
 // "não informado".
 
 // A data chega como aaaa-mm-dd e vai para a tela como dd/mm/aaaa. Sem new
