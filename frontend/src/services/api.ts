@@ -17,6 +17,12 @@ const api = axios.create({
     // cadastro ele vai, e o navegador faz o preflight (OPTIONS) antes.
     'Content-Type': 'application/json',
   },
+  // Parâmetro com lista (Etapa 12). A listagem manda o sort duas vezes,
+  // ?sort=nome,asc&sort=idBeneficiario,asc, que é o formato que o Spring lê.
+  // Sem esta linha, o Axios mandaria sort[]=nome,asc&sort[]=..., o Spring não
+  // acharia nenhum parâmetro "sort" e usaria a ordem padrão (nome), em
+  // silêncio: o clique no cabeçalho não mudaria nada.
+  paramsSerializer: { indexes: null },
 })
 
 export default api

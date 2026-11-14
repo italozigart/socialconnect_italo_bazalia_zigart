@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Alert, AppBar, Button, Container, Stack, Toolbar, Typography } from '@mui/material'
 import { BeneficiarioForm } from './components/BeneficiarioForm'
 import { BeneficiarioList } from './components/BeneficiarioList'
+import { CONSULTA_INICIAL } from './types/consulta'
 import type { Beneficiario } from './types/beneficiario'
+import type { ConsultaBeneficiarios } from './types/consulta'
 
 // Duas telas, trocadas por estado (Etapa 11): a listagem e o cadastro. Sem
 // roteador por enquanto: nenhuma tela precisa de endereço próprio, e a troca
@@ -14,6 +16,9 @@ type Tela = 'listagem' | 'cadastro'
 // num Container centralizado, que vira o <main> da página.
 function App() {
   const [tela, setTela] = useState<Tela>('listagem')
+  // Página e ordem da listagem (Etapa 12), guardadas aqui para a lista voltar
+  // igual depois do cadastro.
+  const [consulta, setConsulta] = useState<ConsultaBeneficiarios>(CONSULTA_INICIAL)
   const [mensagem, setMensagem] = useState<string | null>(null)
   const tituloRef = useRef<HTMLHeadingElement>(null)
   const trocouDeTela = useRef(false)
@@ -40,7 +45,7 @@ function App() {
   }
 
   // 201 do POST: a mensagem aparece na listagem, que monta de novo e busca a
-  // página atualizada, já com o beneficiário novo.
+  // página (a mesma de antes) já atualizada.
   function aoCadastrar(beneficiario: Beneficiario) {
     setMensagem(`Beneficiário ${beneficiario.nome} cadastrado com sucesso.`)
     irPara('listagem')
@@ -59,8 +64,15 @@ function App() {
       <Container component="main" maxWidth="md" sx={{ py: 3 }}>
         {tela === 'listagem' ? (
           <>
-            {/* No MUI 9, justifyContent e alignItems vão no sx, e não como props. */}
-            <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            {/* Mobile-first: no celular, o título e o botão ficam um embaixo
+                do outro, e o botão ocupa a largura toda; a partir de 600px
+                (sm), lado a lado. No MUI 9, justifyContent e alignItems vão
+                no sx, e não como props. */}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+              sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, mb: 2 }}
+            >
               <Typography variant="h4" component="h1" ref={tituloRef} tabIndex={-1}>
                 Beneficiários
               </Typography>
@@ -77,7 +89,7 @@ function App() {
               </Alert>
             )}
 
-            <BeneficiarioList />
+            <BeneficiarioList consulta={consulta} onMudarConsulta={setConsulta} />
           </>
         ) : (
           <>
