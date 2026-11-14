@@ -1,6 +1,7 @@
 package br.com.socialconnect.api.beneficiarios.dto;
 
 import br.com.socialconnect.api.validation.CPF;
+import br.com.socialconnect.api.validation.Telefone;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -21,9 +22,15 @@ import jakarta.validation.constraints.Size;
  * são os da V1. As mensagens são chaves do messages.properties; o Hibernate
  * Validator preenche o {max} com o valor da anotação.
  * <p>
+ * Telefone (Etapa 11): a mesma @Telefone do Doador, alinhada ao schema Zod do
+ * formulário do front-end (só dígitos, 10 ou 11). Ela aceita nulo e texto em
+ * branco, porque o telefone é opcional, e o BeneficiarioService grava o texto
+ * em branco como nulo.
+ * <p>
  * Swagger (Etapa 5): o name do @Schema é o do docs/openapi.yaml. O springdoc lê
- * sozinho o @NotBlank (required) e o @Size (maxLength), mas não conhece a nossa
- * anotação de CPF; por isso o formato do CPF está no pattern do @Schema.
+ * sozinho o @NotBlank (required) e o @Size (maxLength), mas não conhece as
+ * nossas anotações de CPF e de telefone; por isso o formato dos dois está no
+ * pattern do @Schema.
  */
 @Schema(name = "BeneficiarioRequest",
         description = "Dados para cadastrar (POST) ou substituir (PUT) um beneficiário")
@@ -41,8 +48,11 @@ public record BeneficiarioRequestDTO(
         @CPF
         String cpf,
 
-        @Schema(description = "Telefone com DDD", example = "11999999999")
-        @Size(max = 20, message = "{beneficiario.telefone.tamanho}")
+        // Sem @Size: a @Telefone já limita o campo a 10 ou 11 dígitos, e o texto
+        // em branco, de qualquer tamanho, vira nulo no Service antes de gravar.
+        @Schema(description = "Telefone com DDD, só dígitos: 10 (fixo) ou 11 (celular). Opcional.",
+                example = "11999999999", pattern = "^\\d{10,11}$")
+        @Telefone
         String telefone,
 
         @Schema(description = "Endereço completo", example = "Rua das Flores, 123 - Centro")

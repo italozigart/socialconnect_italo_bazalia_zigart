@@ -21,7 +21,8 @@ final class BeneficiarioExemplos {
               "timestamp": "2026-10-03T22:30:00Z",
               "errors": [
                 { "field": "cpf", "message": "CPF inválido. Informe os 11 dígitos, sem pontos nem traço." },
-                { "field": "nome", "message": "O nome é obrigatório." }
+                { "field": "nome", "message": "O nome é obrigatório." },
+                { "field": "telefone", "message": "Telefone inválido. Informe DDD e número, só dígitos: 10 para fixo ou 11 para celular (ex.: 11999999999)." }
               ]
             }
             """;
@@ -35,7 +36,8 @@ final class BeneficiarioExemplos {
               "instance": "/api/v1/beneficiarios/1",
               "timestamp": "2026-10-03T22:30:00Z",
               "errors": [
-                { "field": "nome", "message": "O nome não pode ficar em branco." }
+                { "field": "nome", "message": "O nome não pode ficar em branco." },
+                { "field": "telefone", "message": "Telefone inválido. Informe DDD e número, só dígitos: 10 para fixo ou 11 para celular (ex.: 11999999999)." }
               ]
             }
             """;

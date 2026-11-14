@@ -183,7 +183,8 @@ public class BeneficiarioController {
     @Operation(operationId = "atualizarParcialmenteBeneficiario", summary = "Atualiza parcialmente um beneficiário",
             description = "Só os campos enviados e não nulos mudam. O CPF não muda por aqui; para isso, use o PUT.")
     @ApiResponse(responseCode = "200", description = "Beneficiário atualizado")
-    @ApiResponse(responseCode = "400", description = "Nome em branco, campo acima do tamanho, JSON malformado ou id inválido",
+    @ApiResponse(responseCode = "400",
+            description = "Nome em branco, telefone inválido, campo acima do tamanho, JSON malformado ou id inválido",
             content = @Content(mediaType = "application/json",
                     schema = @Schema(implementation = ProblemDetail.class),
                     examples = @ExampleObject(value = BeneficiarioExemplos.DADOS_INVALIDOS_PATCH)))
