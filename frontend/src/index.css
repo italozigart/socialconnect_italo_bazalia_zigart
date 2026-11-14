@@ -1,22 +1,6 @@
-/* Estilo mínimo da listagem. O do template era da página de boas-vindas do
-   Vite; na Etapa 11 o Material UI (CssBaseline) assume essa parte. */
-
-:root {
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.5;
-  /* Segue o tema claro ou escuro do sistema, com as cores do navegador. */
-  color-scheme: light dark;
-}
-
-body {
-  margin: 0;
-}
-
-main {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 1.5rem;
-}
+/* Estilos da listagem, que continua em HTML puro até a Etapa 12 (tabela do
+   MUI). A fonte, as margens e as cores da página passaram para o tema do MUI
+   e o CssBaseline (main.tsx) na Etapa 11. */
 
 table {
   width: 100%;
