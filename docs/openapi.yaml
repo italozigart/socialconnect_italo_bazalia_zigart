@@ -33,6 +33,12 @@
 #   expressa.
 # - No PATCH, telefone em branco ("") apaga o telefone. No POST, no PUT e no
 #   PATCH, o telefone em branco é gravado como null.
+# Etapa 12 (issue #21): a listagem do front-end ordena pelo título da coluna.
+# - sort das três listagens como lista (array, style form, explode true), como
+#   o springdoc já mostra em /api-docs: o parâmetro pode vir mais de uma vez, e
+#   a ordem dos valores é a ordem dos critérios. O front manda
+#   sort=<coluna>,<direção>&sort=idBeneficiario,<direção>, com o id como
+#   desempate.
 # Produtos mantém o texto original até ser implementado.
 openapi: 3.1.0
 info:
@@ -90,8 +96,16 @@ paths:
         - name: sort
           in: query
           required: false
+          description: >-
+            Ordenação no formato atributo,direção (asc ou desc). Pode vir mais de uma vez: a ordem
+            dos valores é a ordem dos critérios (ex.:
+            sort=dataCadastro,desc&sort=idBeneficiario,desc). Sem sort, a ordem é por nome.
+          style: form
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: Lista paginada de beneficiários
@@ -319,8 +333,16 @@ paths:
         - name: sort
           in: query
           required: false
+          description: >-
+            Ordenação no formato atributo,direção (asc ou desc). Pode vir mais de uma vez: a ordem
+            dos valores é a ordem dos critérios (ex.: sort=valor,desc&sort=idDoacao,desc). Sem sort,
+            as mais recentes primeiro (dataDoacao e idDoacao, decrescentes).
+          style: form
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: Lista paginada de doações
@@ -537,8 +559,16 @@ paths:
         - name: sort
           in: query
           required: false
+          description: >-
+            Ordenação no formato atributo,direção (asc ou desc). Pode vir mais de uma vez: a ordem
+            dos valores é a ordem dos critérios (ex.: sort=nome,asc&sort=idDoador,asc). Sem sort, a
+            ordem é por nome.
+          style: form
+          explode: true
           schema:
-            type: string
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: Lista paginada de doadores
