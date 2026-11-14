@@ -141,6 +141,23 @@ class BeneficiarioServiceTest {
                 .hasMessageContaining(CPF);
     }
 
+    @Test
+    @DisplayName("Deve gravar o telefone como nulo quando o POST traz telefone em branco")
+    void deveGravarTelefoneNuloQuandoPostComTelefoneEmBranco() {
+        // ARRANGE: "   " passa na @Telefone, porque o telefone é opcional
+        BeneficiarioRequestDTO dto = new BeneficiarioRequestDTO("Maria da Silva", CPF, "   ", null, null);
+        when(repository.existsByCpf(CPF)).thenReturn(false);
+        when(repository.saveAndFlush(any(Beneficiario.class))).thenReturn(beneficiarioSalvo());
+
+        // ACT
+        service.criar(dto);
+
+        // ASSERT: o banco recebeu null, e não o texto em branco
+        ArgumentCaptor<Beneficiario> captor = ArgumentCaptor.forClass(Beneficiario.class);
+        verify(repository).saveAndFlush(captor.capture());
+        assertThat(captor.getValue().getTelefone()).isNull();
+    }
+
     // ===================== GET por id =====================
 
     @Test
@@ -219,6 +236,25 @@ class BeneficiarioServiceTest {
         assertThat(existente.getCpf()).isEqualTo(CPF);
     }
 
+    @Test
+    @DisplayName("Deve apagar o telefone quando o PUT traz telefone em branco")
+    void deveApagarTelefoneQuandoPutComTelefoneEmBranco() {
+        // ARRANGE: o beneficiário tem telefone, e o PUT manda ""
+        Beneficiario existente = beneficiarioSalvo();
+        BeneficiarioRequestDTO dto = new BeneficiarioRequestDTO(
+                "Maria da Silva", CPF, "", "Rua das Flores, 123 - Centro", "Renda familiar baixa");
+        when(repository.findById(1L)).thenReturn(Optional.of(existente));
+        when(repository.existsByCpfAndIdBeneficiarioNot(CPF, 1L)).thenReturn(false);
+        when(repository.saveAndFlush(existente)).thenReturn(existente);
+
+        // ACT
+        BeneficiarioResponseDTO resposta = service.atualizar(1L, dto);
+
+        // ASSERT: o telefone virou null, e não ""
+        assertThat(existente.getTelefone()).isNull();
+        assertThat(resposta.telefone()).isNull();
+    }
+
     // ===================== PATCH (atualizarParcial) =====================
 
     @Test
@@ -245,6 +281,27 @@ class BeneficiarioServiceTest {
 
         // ASSERT: sem CPF no PATCH, não há consulta de duplicidade
         verify(repository, never()).existsByCpfAndIdBeneficiarioNot(anyString(), anyLong());
+    }
+
+    @Test
+    @DisplayName("Deve apagar só o telefone quando o PATCH traz telefone em branco")
+    void deveApagarTelefoneQuandoPatchComTelefoneEmBranco() {
+        // ARRANGE: PATCH só com o telefone em branco; os outros campos vêm nulos
+        Beneficiario existente = beneficiarioSalvo();
+        BeneficiarioPatchDTO dto = new BeneficiarioPatchDTO(null, "", null, null);
+        when(repository.findById(1L)).thenReturn(Optional.of(existente));
+        when(repository.save(existente)).thenReturn(existente);
+
+        // ACT
+        BeneficiarioResponseDTO resposta = service.atualizarParcial(1L, dto);
+
+        // ASSERT: "" apaga o telefone (null), diferente do null, que não mexe
+        assertThat(resposta.telefone()).isNull();
+
+        // ASSERT: os campos que vieram nulos não mudaram
+        assertThat(resposta.nome()).isEqualTo("Maria da Silva");
+        assertThat(resposta.endereco()).isEqualTo("Rua das Flores, 123 - Centro");
+        assertThat(resposta.situacaoVulnerabilidade()).isEqualTo("Renda familiar baixa");
     }
 
     // ===================== DELETE =====================

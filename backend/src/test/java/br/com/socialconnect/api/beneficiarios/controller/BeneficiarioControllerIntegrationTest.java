@@ -41,6 +41,10 @@ class BeneficiarioControllerIntegrationTest {
     private static final String CPF_MARIANA = "12345678909";
     private static final String CPF_JOAO = "11144477735";
 
+    // Mensagem da @Telefone no messages.properties (validacao.telefone.invalido)
+    private static final String TELEFONE_INVALIDO = "Telefone inválido. Informe DDD e número, só dígitos: "
+            + "10 para fixo ou 11 para celular (ex.: 11999999999).";
+
     private static final ParameterizedTypeReference<Map<String, Object>> JSON_OBJETO =
             new ParameterizedTypeReference<>() {
             };
@@ -185,6 +189,56 @@ class BeneficiarioControllerIntegrationTest {
         assertThat(repository.count()).isZero();
     }
 
+    @Test
+    @DisplayName("POST - deve retornar 400 no campo telefone quando o DDD não existe")
+    void deveRetornar400QuandoTelefoneComDddInexistente() {
+        // ARRANGE: só dígitos e 10 de tamanho, então o formato passa no schema
+        // Zod do front (^\d{10,11}$); mas não existe DDD 10, e a @Telefone recusa
+        String json = """
+                {"nome": "Maria da Silva", "cpf": "%s", "telefone": "1033334444"}
+                """.formatted(CPF_MARIA);
+
+        // ACT
+        ResponseEntity<Map<String, Object>> resposta = post(json);
+
+        // ASSERT: 400 só com o campo telefone, que o formulário mostra no campo
+        assertThat(resposta.getStatusCode().value()).isEqualTo(400);
+        Map<String, Object> corpo = resposta.getBody();
+        assertThat(corpo).isNotNull();
+        assertThat(corpo.get("type")).isEqualTo(ERROS + "validacao");
+        assertThat(corpo.get("errors")).isEqualTo(List.of(
+                Map.of("field", "telefone", "message", TELEFONE_INVALIDO)
+        ));
+
+        // ASSERT: nada foi gravado
+        assertThat(repository.count()).isZero();
+    }
+
+    @Test
+    @DisplayName("POST - deve gravar o telefone em branco como null, mesmo maior que a coluna")
+    void deveGravarTelefoneNuloQuandoPostComTelefoneEmBranco() {
+        // ARRANGE: 25 espaços. Em branco, o telefone passa na @Telefone (é
+        // opcional), e sem o @Size nada limita o tamanho; a coluna da V1 tem 20
+        String json = """
+                {"nome": "Maria da Silva", "cpf": "%s", "telefone": "%s"}
+                """.formatted(CPF_MARIA, " ".repeat(25));
+
+        // ACT
+        ResponseEntity<Map<String, Object>> resposta = post(json);
+
+        // ASSERT: 201, e não o 409 falso do salvar, porque o Service troca o
+        // texto em branco por null antes de gravar; o JSON traz "telefone": null
+        assertThat(resposta.getStatusCode().value()).isEqualTo(201);
+        Map<String, Object> corpo = resposta.getBody();
+        assertThat(corpo).isNotNull();
+        assertThat(corpo).containsEntry("telefone", null);
+
+        // ASSERT: relido do banco por um GET, o telefone continua null
+        Map<String, Object> gravado = get(corpo.get("idBeneficiario")).getBody();
+        assertThat(gravado).isNotNull();
+        assertThat(gravado).containsEntry("telefone", null);
+    }
+
     // ===================== GET =====================
 
     @Test
@@ -292,6 +346,36 @@ class BeneficiarioControllerIntegrationTest {
         assertThat(corpo.get("cpf")).isEqualTo(CPF_MARIA);
         assertThat(corpo.get("endereco")).isEqualTo("Rua das Flores, 123 - Centro");
         assertThat(corpo.get("situacaoVulnerabilidade")).isEqualTo("Renda familiar baixa");
+    }
+
+    @Test
+    @DisplayName("PATCH - deve retornar 400 quando o telefone vem com máscara")
+    void deveRetornar400QuandoPatchComTelefoneComMascara() {
+        // ARRANGE
+        Object id = criar("Maria da Silva", CPF_MARIA);
+
+        // ACT: a @Telefone vale também no PATCH
+        ResponseEntity<Map<String, Object>> resposta = cliente.patch()
+                .uri(URL + "/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"telefone": "(11) 98888-7777"}
+                        """)
+                .retrieve()
+                .toEntity(JSON_OBJETO);
+
+        // ASSERT: 400 no campo telefone
+        assertThat(resposta.getStatusCode().value()).isEqualTo(400);
+        Map<String, Object> corpo = resposta.getBody();
+        assertThat(corpo).isNotNull();
+        assertThat(corpo.get("errors")).isEqualTo(List.of(
+                Map.of("field", "telefone", "message", TELEFONE_INVALIDO)
+        ));
+
+        // ASSERT: relido do banco, o telefone continua o do cadastro
+        Map<String, Object> gravado = get(id).getBody();
+        assertThat(gravado).isNotNull();
+        assertThat(gravado.get("telefone")).isEqualTo("11999999999");
     }
 
     // ===================== DELETE =====================
