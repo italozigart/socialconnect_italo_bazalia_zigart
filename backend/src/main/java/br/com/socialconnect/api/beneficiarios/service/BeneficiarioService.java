@@ -65,7 +65,7 @@ public class BeneficiarioService {
         Beneficiario novo = Beneficiario.builder()
                 .nome(dto.nome())
                 .cpf(dto.cpf())
-                .telefone(dto.telefone())
+                .telefone(textoOuNulo(dto.telefone()))
                 .endereco(dto.endereco())
                 .situacaoVulnerabilidade(dto.situacaoVulnerabilidade())
                 .dataCadastro(LocalDate.now())
@@ -75,8 +75,9 @@ public class BeneficiarioService {
     }
 
     // PUT: substituição total. Os cinco campos do cliente são copiados sempre,
-    // inclusive os nulos (telefone ausente no JSON apaga o telefone).
-    // idBeneficiario e dataCadastro são do servidor e não mudam.
+    // inclusive os nulos (telefone ausente no JSON apaga o telefone, e o
+    // telefone em branco também). idBeneficiario e dataCadastro são do
+    // servidor e não mudam.
     @Transactional
     public BeneficiarioResponseDTO atualizar(Long idBeneficiario, BeneficiarioRequestDTO dto) {
         Beneficiario beneficiario = buscarEntidadePorId(idBeneficiario);
@@ -91,7 +92,7 @@ public class BeneficiarioService {
 
         beneficiario.setNome(dto.nome());
         beneficiario.setCpf(dto.cpf());
-        beneficiario.setTelefone(dto.telefone());
+        beneficiario.setTelefone(textoOuNulo(dto.telefone()));
         beneficiario.setEndereco(dto.endereco());
         beneficiario.setSituacaoVulnerabilidade(dto.situacaoVulnerabilidade());
 
@@ -102,7 +103,8 @@ public class BeneficiarioService {
     }
 
     // PATCH: atualização parcial. Só os campos não nulos são aplicados; o CPF
-    // não está no BeneficiarioPatchDTO e só muda pelo PUT. Sem CPF, não há
+    // não está no BeneficiarioPatchDTO e só muda pelo PUT. O telefone em branco
+    // ("") é aplicado como nulo, ou seja, apaga o telefone. Sem CPF, não há
     // UNIQUE a violar, então o save comum basta: na transação, a entidade
     // continua gerenciada e o Hibernate envia o UPDATE no commit (dirty checking).
     @Transactional
@@ -113,7 +115,7 @@ public class BeneficiarioService {
             beneficiario.setNome(dto.nome());
         }
         if (dto.telefone() != null) {
-            beneficiario.setTelefone(dto.telefone());
+            beneficiario.setTelefone(textoOuNulo(dto.telefone()));
         }
         if (dto.endereco() != null) {
             beneficiario.setEndereco(dto.endereco());
@@ -154,6 +156,18 @@ public class BeneficiarioService {
         } catch (DataIntegrityViolationException e) {
             throw new CpfDuplicadoException(beneficiario.getCpf());
         }
+    }
+
+    // Usado no telefone, em criar, atualizar e atualizarParcial (Etapa 11).
+    // A @Telefone aceita texto em branco ("" ou "   ") porque o telefone é
+    // opcional; aqui ele vira null, como no DoadorService, para o banco não
+    // guardar dois jeitos de dizer "não informado". Também protege a coluna:
+    // sem o @Size, um texto em branco maior que os 20 caracteres da V1 passaria
+    // no @Valid e quebraria no banco (no salvar, o erro viraria um 409 falso).
+    // Endereço e situação continuam gravados como vieram: o formulário do front
+    // não manda campo vazio, então por ele os dois também chegam null.
+    private static String textoOuNulo(String valor) {
+        return (valor == null || valor.isBlank()) ? null : valor;
     }
 
     private BeneficiarioResponseDTO toResponseDTO(Beneficiario entity) {

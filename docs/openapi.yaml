@@ -25,6 +25,14 @@
 # - BeneficiarioResponse e PageBeneficiarioResponse com required: os campos vêm
 #   sempre no JSON (mesmo com null). Os tipos Beneficiario e Page<T> do front
 #   seguem estes dois schemas.
+# Etapa 11 (issue #20): o telefone do beneficiário passa a usar a @Telefone do
+# doador, e o formulário de cadastro do front-end (Zod) confere o mesmo formato.
+# - BeneficiarioRequest e BeneficiarioPatch: telefone só com dígitos, 10 (fixo)
+#   ou 11 (celular), no lugar do maxLength 20. A API ainda confere o DDD (11 a
+#   99) e o início do número (fixo de 2 a 5, celular com 9), que o pattern não
+#   expressa.
+# - No PATCH, telefone em branco ("") apaga o telefone. No POST, no PUT e no
+#   PATCH, o telefone em branco é gravado como null.
 # Produtos mantém o texto original até ser implementado.
 openapi: 3.1.0
 info:
@@ -670,7 +678,8 @@ components:
           pattern: ^\d{11}$
         telefone:
           type: string
-          maxLength: 20
+          pattern: ^\d{10,11}$
+          description: Opcional. DDD e número, só dígitos (10 para fixo, 11 para celular)
         endereco:
           type: string
           maxLength: 255
@@ -717,7 +726,8 @@ components:
           maxLength: 150
         telefone:
           type: string
-          maxLength: 20
+          pattern: ^(\d{10,11})?$
+          description: DDD e número, só dígitos (10 para fixo, 11 para celular); em branco (""), apaga o telefone
         endereco:
           type: string
           maxLength: 255

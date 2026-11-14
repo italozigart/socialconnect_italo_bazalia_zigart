@@ -13,7 +13,8 @@ const api = axios.create({
   headers: {
     // Como na aula. O Axios só manda este cabeçalho quando a requisição tem
     // corpo (POST, PUT e PATCH). No GET da listagem ele fica de fora, e o GET
-    // continua sendo uma requisição simples, sem preflight.
+    // continua sendo uma requisição simples, sem preflight. No POST do
+    // cadastro ele vai, e o navegador faz o preflight (OPTIONS) antes.
     'Content-Type': 'application/json',
   },
 })
@@ -34,4 +35,19 @@ export function mensagemDeErro(erro: unknown): string {
     return `Não foi possível acessar a API (${API_URL}). Verifique se o back-end está rodando.`
   }
   return 'Erro inesperado ao acessar a API.'
+}
+
+// Corpo Problem Details da resposta de erro (Etapa 11). O formulário usa o
+// status para separar o 400 (erros em errors, campo a campo) do 409 (CPF já
+// cadastrado). Devolve null quando não houve resposta (API parada, CORS) ou
+// quando o corpo não tem o formato do Problem Details (status numérico e a
+// lista errors), e aí vale a mensagemDeErro.
+export function problemDetailDe(erro: unknown): ProblemDetail | null {
+  if (axios.isAxiosError<ProblemDetail>(erro)) {
+    const corpo = erro.response?.data
+    if (typeof corpo?.status === 'number' && Array.isArray(corpo.errors)) {
+      return corpo
+    }
+  }
+  return null
 }

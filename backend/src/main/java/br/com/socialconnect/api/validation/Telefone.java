@@ -20,8 +20,10 @@ import java.lang.annotation.Target;
  *   <li>Confere o início do número: fixo (10 dígitos) começa com 2 a 5, e
  *       celular (11 dígitos) começa com 9. A do professor só recusava 0 e 1.</li>
  * </ul>
- * Na Etapa 7 vale só para o Doador. O Beneficiário continua com @Size(max = 20)
- * até a issue do formulário do front-end, que alinha os dois ao Zod.
+ * Vale para o telefone do Doador (Etapa 7) e, desde a Etapa 11, para o do
+ * Beneficiário (POST, PUT e PATCH). O schema Zod do formulário do front-end
+ * confere só o formato (^\d{10,11}$); o DDD e o início do número, só a API
+ * confere, e o formulário mostra a mensagem do 400 embaixo do campo.
  * <p>
  * A mensagem é uma chave do messages.properties (i18n).
  */
