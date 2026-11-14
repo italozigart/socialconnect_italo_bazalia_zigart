@@ -30,6 +30,18 @@ const VALORES_INICIAIS: BeneficiarioFormValues = {
   situacaoVulnerabilidade: '',
 }
 
+// Edição (Etapa 12): os campos começam com os dados da tabela. O que a API
+// devolve como null (não informado) vira "", pelo mesmo motivo de cima.
+function valoresDe(beneficiario: Beneficiario): BeneficiarioFormValues {
+  return {
+    nome: beneficiario.nome,
+    cpf: beneficiario.cpf,
+    telefone: beneficiario.telefone ?? '',
+    endereco: beneficiario.endereco ?? '',
+    situacaoVulnerabilidade: beneficiario.situacaoVulnerabilidade ?? '',
+  }
+}
+
 // Erro que não é de um campo (API parada, 500...), mostrado no alerta do topo.
 // focar: se o alerta recebe o foco (quando nenhum campo recebeu).
 interface ErroGeral {
@@ -38,17 +50,20 @@ interface ErroGeral {
 }
 
 interface BeneficiarioFormProps {
-  onCadastrado: (beneficiario: Beneficiario) => void
+  // Sem beneficiário, o formulário abre vazio e cadastra (POST); com ele,
+  // abre preenchido e salva as alterações (PUT).
+  beneficiario?: Beneficiario
+  onSalvo: (beneficiario: Beneficiario) => void
   onCancelar: () => void
 }
 
-// Cadastro de beneficiário (Aula 10): React Hook Form + Zod + MUI.
-// - Antes do POST, o zodResolver valida tudo; com erro, o RHF não chama o
+// Cadastro e edição de beneficiário (Aula 10): React Hook Form + Zod + MUI.
+// - Antes do envio, o zodResolver valida tudo; com erro, o RHF não chama o
 //   enviar, mostra as mensagens e dá foco ao primeiro campo inválido.
-// - Depois do POST: 201 avisa o App (mensagem e volta para a listagem);
-//   400 mostra cada item do errors no seu campo; 409 mostra o detail no CPF;
-//   o resto (API parada, 500) aparece num alerta no topo do formulário.
-export function BeneficiarioForm({ onCadastrado, onCancelar }: BeneficiarioFormProps) {
+// - Depois do envio: 201 (POST) ou 200 (PUT) avisam o App (mensagem e volta
+//   para a listagem); 400 mostra cada item do errors no seu campo; 409 mostra
+//   o detail no CPF; o resto (404, API parada, 500) aparece num alerta no topo.
+export function BeneficiarioForm({ beneficiario, onSalvo, onCancelar }: BeneficiarioFormProps) {
   const {
     register,
     handleSubmit,
@@ -57,12 +72,12 @@ export function BeneficiarioForm({ onCadastrado, onCancelar }: BeneficiarioFormP
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(beneficiarioSchema),
-    defaultValues: VALORES_INICIAIS,
+    defaultValues: beneficiario ? valoresDe(beneficiario) : VALORES_INICIAIS,
   })
   const [erroGeral, setErroGeral] = useState<ErroGeral | null>(null)
   const alertaRef = useRef<HTMLDivElement>(null)
 
-  // O botão Cadastrar fica desabilitado durante o envio, e o navegador tira o
+  // O botão de enviar fica desabilitado durante o envio, e o navegador tira o
   // foco dele (vai para o body). Num erro sem campo, o foco vai para o alerta:
   // o leitor de tela lê a mensagem, e o próximo Tab segue para o Nome. Cada
   // erro é um objeto novo, então o efeito roda uma vez por erro, e não a cada
@@ -75,12 +90,19 @@ export function BeneficiarioForm({ onCadastrado, onCancelar }: BeneficiarioFormP
 
   // Recebe os dados já validados e transformados pelo schema (sem espaços nas
   // pontas e sem os opcionais vazios). O RHF deixa o isSubmitting em true até
-  // esta função terminar, e o botão fica em "Cadastrando..." nesse tempo.
+  // esta função terminar, e o botão fica em "Cadastrando..." ou "Salvando..."
+  // nesse tempo.
+  //
+  // PUT (Etapa 12): substituição total, com o mesmo corpo do POST. Campo
+  // opcional apagado na tela não vai no JSON, e a API grava null: apagar o
+  // endereço na edição apaga o endereço no banco.
   async function enviar(dados: BeneficiarioFormData) {
     setErroGeral(null)
     try {
-      const resposta = await api.post<Beneficiario>('/beneficiarios', dados)
-      onCadastrado(resposta.data)
+      const resposta = beneficiario
+        ? await api.put<Beneficiario>(`/beneficiarios/${beneficiario.idBeneficiario}`, dados)
+        : await api.post<Beneficiario>('/beneficiarios', dados)
+      onSalvo(resposta.data)
     } catch (erro) {
       tratarErroDaApi(erro)
     }
@@ -89,7 +111,8 @@ export function BeneficiarioForm({ onCadastrado, onCancelar }: BeneficiarioFormP
   function tratarErroDaApi(erro: unknown) {
     const problema = problemDetailDe(erro)
 
-    // 409: o único conflito do POST é o CPF repetido. O detail já diz qual.
+    // 409: o único conflito do POST e do PUT é o CPF de outro beneficiário.
+    // O detail já diz qual.
     if (problema?.status === 409) {
       setError('cpf', { type: 'server', message: problema.detail }, { shouldFocus: true })
       return
@@ -126,10 +149,28 @@ export function BeneficiarioForm({ onCadastrado, onCancelar }: BeneficiarioFormP
       return
     }
 
+    // 404 no PUT: alguém excluiu o beneficiário depois que a tabela carregou.
+    if (problema?.status === 404) {
+      setErroGeral({
+        mensagem: `${problema.detail} Ele pode ter sido excluído. Use Cancelar para voltar à lista.`,
+        focar: true,
+      })
+      return
+    }
+
     // API parada, CORS, 500 ou 400 sem errors (JSON malformado).
-    console.error('Erro ao cadastrar beneficiário:', erro)
+    console.error('Erro ao salvar beneficiário:', erro)
     setErroGeral({ mensagem: mensagemDeErro(erro), focar: true })
   }
+
+  // Textos do botão de enviar, conforme a tela.
+  const textoDoBotao = beneficiario
+    ? isSubmitting
+      ? 'Salvando...'
+      : 'Salvar alterações'
+    : isSubmitting
+      ? 'Cadastrando...'
+      : 'Cadastrar'
 
   // Acessibilidade:
   // - o label do TextField vira um <label for="..."> ligado ao campo;
@@ -211,10 +252,10 @@ export function BeneficiarioForm({ onCadastrado, onCancelar }: BeneficiarioFormP
       />
 
       {/* loading (MUI 9): desabilita o botão e mostra o indicador de progresso
-          no lugar do ícone; o texto muda para "Cadastrando...", como na aula. */}
+          no lugar do ícone; o texto muda durante o envio, como na aula. */}
       <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
         <Button type="submit" variant="contained" loading={isSubmitting} loadingPosition="start">
-          {isSubmitting ? 'Cadastrando...' : 'Cadastrar'}
+          {textoDoBotao}
         </Button>
         <Button type="button" variant="outlined" onClick={onCancelar} disabled={isSubmitting}>
           Cancelar

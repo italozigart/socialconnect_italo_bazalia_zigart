@@ -24,7 +24,7 @@
 | Migrations | Flyway (starter do Spring Boot) | 12.4.0 |
 | Documentação da API | springdoc-openapi | 3.1.0 |
 | Testes | JUnit Jupiter + Mockito + AssertJ (starters de teste do Spring Boot); integração com H2 em memória, sem Docker | JUnit Jupiter 6.0.3 · Mockito 5.23.0 · AssertJ 3.27.7 (versões gerenciadas pelo Spring Boot 4.1.1) |
-| Front-end | React + TypeScript + Vite (criado com `create-vite` 9.3.4, template `react-ts`) + Axios; Material UI (MUI), React Hook Form e Zod a partir da aula 10 | React 19.3.1 · TypeScript 7.0.2 · Vite 8.3.8 · Axios 1.21.1 · MUI 9.5.0 (`@mui/material`, com `@emotion/react` 11.14.0 e `@emotion/styled` 11.14.1) · React Hook Form 7.92.0 (com `@hookform/resolvers` 7.0.6) · Zod 4.6.7 |
+| Front-end | React + TypeScript + Vite (criado com `create-vite` 9.3.4, template `react-ts`) + Axios; Material UI (MUI), React Hook Form e Zod a partir da aula 10 | React 19.3.1 · TypeScript 7.0.2 · Vite 8.3.8 · Axios 1.21.1 · MUI 9.5.0 (`@mui/material` e `@mui/icons-material`, com `@emotion/react` 11.14.0 e `@emotion/styled` 11.14.1) · React Hook Form 7.92.0 (com `@hookform/resolvers` 7.0.6) · Zod 4.6.7 |
 | Ferramentas do front-end | Node.js + npm; lint com Oxlint (padrão do template) | Node.js 26.13.1 (LTS, já instalado no laboratório) · npm 11.20.0 · Oxlint 1.93.0. Versões exatas no `frontend/package-lock.json` |
 
 > As versões são registradas no início do semestre e só mudam com decisão da equipe documentada.
@@ -61,7 +61,13 @@ cd frontend
 npm install
 npm run dev
 ```
-Abra http://localhost:5173. A tela lista os beneficiários da API (`GET /api/v1/beneficiarios?page=0&size=10`) e, pelo botão **Novo beneficiário**, cadastra um novo (`POST /api/v1/beneficiarios`), com a validação do Zod antes do envio e os erros da API (400 e 409) embaixo de cada campo.
+Abra http://localhost:5173. A tela de beneficiários:
+- **lista** numa tabela do MUI, 10 por página (`GET /api/v1/beneficiarios?page=0&size=10&sort=nome,asc&sort=idBeneficiario,asc`), com ordenação por nome, CPF ou data de cadastro (clique no título da coluna), paginação embaixo da tabela, linhas cinza (Skeleton) durante o carregamento e um aviso com ícone quando não há ninguém cadastrado;
+- **cadastra** pelo botão **Novo beneficiário** (`POST /api/v1/beneficiarios`), com a validação do Zod antes do envio e os erros da API (400 e 409) embaixo de cada campo;
+- **edita** pelo ícone de lápis da linha (`PUT /api/v1/beneficiarios/{id}`), no mesmo formulário do cadastro, já preenchido;
+- **exclui** pelo ícone de lixeira (`DELETE /api/v1/beneficiarios/{id}`), depois de uma confirmação.
+
+No celular (tela com menos de 600px), a tabela mostra só o nome, o CPF e os botões; o telefone aparece a partir de 600px, e a data de cadastro a partir de 900px.
 
 Outros comandos, dentro de `frontend/`:
 ```bash
@@ -70,7 +76,7 @@ npm run lint      # Oxlint
 npm run preview   # serve o build, também na porta 5173
 ```
 
-O `npm run build` avisa que o pacote JavaScript passa de 500 kB (*Some chunks are larger than 500 kB*): é só um aviso, porque o React, o MUI, o Zod, o Axios e o React Hook Form vão juntos num arquivo só (cerca de 200 kB com gzip).
+O `npm run build` avisa que o pacote JavaScript passa de 500 kB (*Some chunks are larger than 500 kB*): é só um aviso, porque o React, o MUI, o Zod, o Axios e o React Hook Form vão juntos num arquivo só (cerca de 210 kB com gzip). Dos ícones do `@mui/icons-material`, só os três usados entram no build.
 
 O front precisa rodar em **http://localhost:5173**: é a única origem que o `CorsConfig` da API libera. Por isso o `vite.config.ts` fixa a porta (`strictPort`): se a 5173 estiver ocupada, o Vite para com erro em vez de subir em outra porta. Abrir pelo endereço `http://127.0.0.1:5173` também não funciona, porque é outra origem.
 
