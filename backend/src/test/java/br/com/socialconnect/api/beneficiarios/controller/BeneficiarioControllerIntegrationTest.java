@@ -283,6 +283,39 @@ class BeneficiarioControllerIntegrationTest {
         assertThat(primeiro.get("nome")).isEqualTo("Maria da Silva");
     }
 
+    @Test
+    @DisplayName("GET - deve aceitar dois sort e desempatar pelo id, como a listagem do front")
+    void deveDesempatarPeloIdQuandoListarComDoisSort() {
+        // ARRANGE: três cadastros no mesmo dia, ou seja, com a mesma dataCadastro
+        Object idMaria = criar("Maria da Silva", CPF_MARIA);
+        Object idMariana = criar("Mariana Souza", CPF_MARIANA);
+        Object idJoao = criar("João Pereira", CPF_JOAO);
+
+        // ACT: o mesmo sort que a BeneficiarioList manda (Etapa 12), a coluna e
+        // o idBeneficiario na mesma direção, em duas páginas de dois
+        String uri = URL + "?page={page}&size=2&sort=dataCadastro,desc&sort=idBeneficiario,desc";
+        ResponseEntity<Map<String, Object>> pagina1 = cliente.get().uri(uri, 0).retrieve().toEntity(JSON_OBJETO);
+        ResponseEntity<Map<String, Object>> pagina2 = cliente.get().uri(uri, 1).retrieve().toEntity(JSON_OBJETO);
+
+        // ASSERT: com a data empatada, o id decide (do cadastro mais novo para
+        // o mais antigo), e cada beneficiário aparece em uma página só
+        assertThat(pagina1.getStatusCode().value()).isEqualTo(200);
+        assertThat(pagina2.getStatusCode().value()).isEqualTo(200);
+        assertThat(idsDe(pagina1)).containsExactly(idJoao, idMariana);
+        assertThat(idsDe(pagina2)).containsExactly(idMaria);
+    }
+
+    // Ids dos beneficiários de uma página, na ordem em que vieram. O (Object)
+    // é necessário: sem ele, o tipo do get de um Map<?, ?> é um "?" sem nome,
+    // e o toList() devolveria uma lista desse tipo, que o Java não aceita
+    // como List<Object>.
+    private List<Object> idsDe(ResponseEntity<Map<String, Object>> resposta) {
+        List<?> conteudo = (List<?>) resposta.getBody().get("content");
+        return conteudo.stream()
+                .map(item -> (Object) ((Map<?, ?>) item).get("idBeneficiario"))
+                .toList();
+    }
+
     // ===================== PUT =====================
 
     @Test
