@@ -4,6 +4,7 @@ import {
   Alert,
   Box,
   Button,
+  IconButton,
   Pagination,
   Paper,
   Skeleton,
@@ -19,18 +20,21 @@ import {
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import type { SxProps, Theme } from '@mui/material/styles'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
 import PersonOffOutlinedIcon from '@mui/icons-material/PersonOffOutlined'
 import api, { mensagemDeErro } from '../services/api'
+import { ConfirmacaoExclusao } from './ConfirmacaoExclusao'
 import { somenteLeitorDeTela } from '../utils/acessibilidade'
 import { formatarCpf, formatarData } from '../utils/formatacao'
 import type { Beneficiario } from '../types/beneficiario'
 import type { CampoOrdenavel, ConsultaBeneficiarios, Direcao, Ordenacao } from '../types/consulta'
 import type { Page } from '../types/page'
 
-// Ícone importado pelo caminho (@mui/icons-material/PersonOffOutlined), e não
-// pela lista do pacote, como na aula ({ Edit } from '@mui/icons-material'): o
-// resultado é o mesmo, mas o npm run dev não precisa processar os mais de 2
-// mil ícones do pacote para achar um.
+// Ícones importados pelo caminho (@mui/icons-material/Edit), e não pela lista
+// do pacote, como na aula ({ Edit } from '@mui/icons-material'): o resultado
+// é o mesmo, mas o npm run dev não precisa processar os mais de 2 mil ícones
+// do pacote para achar três.
 
 // Itens por página: o size da API.
 const TAMANHO_PAGINA = 10
@@ -38,8 +42,8 @@ const TAMANHO_PAGINA = 10
 // Linhas cinza (Skeleton) enquanto a página carrega.
 const LINHAS_DO_ESQUELETO = 5
 
-// Mobile-first: no celular (menos de 600px), a tabela mostra só Nome e CPF,
-// e cabe na tela sem rolar para o lado. O Telefone aparece a partir de
+// Mobile-first: no celular (menos de 600px), a tabela mostra só Nome, CPF e
+// Ações, e cabe na tela sem rolar para o lado. O Telefone aparece a partir de
 // 600px (sm), e a Data de cadastro a partir de 900px (md). Os dois continuam
 // na tela de edição.
 const SO_A_PARTIR_DO_SM = { display: { xs: 'none', sm: 'table-cell' } } as const
@@ -69,16 +73,26 @@ interface Resultado {
 interface BeneficiarioListProps {
   consulta: ConsultaBeneficiarios
   onMudarConsulta: Dispatch<SetStateAction<ConsultaBeneficiarios>>
+  onEditar: (beneficiario: Beneficiario) => void
+  onExcluido: (beneficiario: Beneficiario, jaNaoExistia: boolean) => void
 }
 
 // Listagem de beneficiários com o MUI (Aula 10, Design Studio): tabela com
-// ordenação pelo cabeçalho, paginação, Skeleton no carregamento e mensagem
-// com ícone na lista vazia.
-export function BeneficiarioList({ consulta, onMudarConsulta }: BeneficiarioListProps) {
+// ordenação pelo cabeçalho, paginação, Skeleton no carregamento, mensagem com
+// ícone na lista vazia e os botões Editar (PUT) e Excluir (DELETE).
+export function BeneficiarioList({ consulta, onMudarConsulta, onEditar, onExcluido }: BeneficiarioListProps) {
   const { pagina, ordenacao } = consulta
-  // Soma 1 a cada "Tentar de novo": busca a mesma página de novo.
+  // Soma 1 a cada "Tentar de novo" e a cada exclusão: busca a mesma página de novo.
   const [recarga, setRecarga] = useState(0)
   const [resultado, setResultado] = useState<Resultado | null>(null)
+  // Exclusão em andamento: o beneficiário, se o diálogo está aberto e se a
+  // exclusão foi feita (excluido), para saber para onde vai o foco no fim.
+  const [exclusao, setExclusao] = useState<{ beneficiario: Beneficiario; aberta: boolean; excluido: boolean } | null>(
+    null,
+  )
+  // Botão de lixeira que abriu o diálogo: o foco volta para ele se a pessoa
+  // cancelar.
+  const lixeiraRef = useRef<HTMLButtonElement | null>(null)
   const alertaRef = useRef<HTMLDivElement>(null)
   // No celular, a paginação mostra menos números para caber numa linha.
   // noSsr: o valor certo já na primeira renderização (sem servidor, não há
@@ -117,8 +131,8 @@ export function BeneficiarioList({ consulta, onMudarConsulta }: BeneficiarioList
           return
         }
         const dados = resposta.data
-        // Página depois da última (ex.: alguém excluiu pelo Swagger o único
-        // beneficiário da última página): a busca vai para a última que existe.
+        // Página depois da última: acontece quando a exclusão leva o único
+        // beneficiário da última página. A busca vai para a última que existe.
         if (dados.content.length === 0 && pagina > 0 && dados.totalPages > 0) {
           onMudarConsulta((anterior) => ({ ...anterior, pagina: dados.totalPages - 1 }))
           return
@@ -254,8 +268,11 @@ export function BeneficiarioList({ consulta, onMudarConsulta }: BeneficiarioList
                 // O MUI põe o caption embaixo da tabela; aqui ele fica em
                 // cima, como título visível dela.
                 '& caption': { captionSide: 'top' },
-                // No celular, menos espaço dos lados de cada célula.
+                // No celular, menos espaço dos lados de cada célula e dos
+                // botões de ícone (36px em vez de 40px): a tabela cabe numa
+                // tela de 320px.
                 '& th, & td': { px: { xs: 0.75, sm: 2 } },
+                '& .MuiIconButton-root': { p: { xs: 0.75, sm: 1 } },
               }}
             >
               {/* O caption é o nome da tabela para o leitor de tela. */}
@@ -266,6 +283,7 @@ export function BeneficiarioList({ consulta, onMudarConsulta }: BeneficiarioList
                   {cabecalhoOrdenavel('cpf', 'CPF')}
                   <TableCell sx={SO_A_PARTIR_DO_SM}>Telefone</TableCell>
                   {cabecalhoOrdenavel('dataCadastro', 'Data de cadastro', SO_A_PARTIR_DO_MD)}
+                  <TableCell align="right">Ações</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -285,6 +303,10 @@ export function BeneficiarioList({ consulta, onMudarConsulta }: BeneficiarioList
                         </TableCell>
                         <TableCell sx={SO_A_PARTIR_DO_MD}>
                           <Skeleton />
+                        </TableCell>
+                        <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                          <Skeleton variant="circular" width={28} height={28} sx={{ display: 'inline-block', mx: 0.5 }} />
+                          <Skeleton variant="circular" width={28} height={28} sx={{ display: 'inline-block', mx: 0.5 }} />
                         </TableCell>
                       </TableRow>
                     ))
@@ -306,6 +328,25 @@ export function BeneficiarioList({ consulta, onMudarConsulta }: BeneficiarioList
                           )}
                         </TableCell>
                         <TableCell sx={SO_A_PARTIR_DO_MD}>{formatarData(beneficiario.dataCadastro)}</TableCell>
+                        <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                          {/* Botões só com ícone: o aria-label é o nome do
+                              botão. Com o nome do beneficiário, cada um é
+                              único ("Editar Maria da Silva"), e quem navega
+                              pela lista de botões sabe qual é qual. */}
+                          <IconButton aria-label={`Editar ${beneficiario.nome}`} onClick={() => onEditar(beneficiario)}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton
+                            aria-label={`Excluir ${beneficiario.nome}`}
+                            color="error"
+                            onClick={(evento) => {
+                              lixeiraRef.current = evento.currentTarget
+                              setExclusao({ beneficiario, aberta: true, excluido: false })
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </TableCell>
                       </TableRow>
                     ))}
               </TableBody>
@@ -329,6 +370,30 @@ export function BeneficiarioList({ consulta, onMudarConsulta }: BeneficiarioList
         </>
       )}
 
+      {/* O diálogo fica na tela até o fim da animação de saída (onFechada).
+          A key separa um beneficiário do outro: cada exclusão começa sem o
+          erro da anterior. */}
+      {exclusao !== null && (
+        <ConfirmacaoExclusao
+          key={exclusao.beneficiario.idBeneficiario}
+          beneficiario={exclusao.beneficiario}
+          aberta={exclusao.aberta}
+          onCancelar={() => setExclusao({ ...exclusao, aberta: false })}
+          onExcluido={(beneficiario, jaNaoExistia) => {
+            setExclusao({ ...exclusao, aberta: false, excluido: true })
+            setRecarga((anterior) => anterior + 1)
+            onExcluido(beneficiario, jaNaoExistia)
+          }}
+          onFechada={() => {
+            // Cancelou: o foco volta para a lixeira. Excluiu: o App já pôs o
+            // foco no título.
+            if (!exclusao.excluido) {
+              lixeiraRef.current?.focus()
+            }
+            setExclusao(null)
+          }}
+        />
+      )}
     </>
   )
 }
