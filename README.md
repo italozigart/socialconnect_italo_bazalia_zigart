@@ -24,33 +24,55 @@
 | Migrations | Flyway (starter do Spring Boot) | 12.4.0 |
 | Documentação da API | springdoc-openapi | 3.1.0 |
 | Testes | JUnit Jupiter + Mockito + AssertJ (starters de teste do Spring Boot); integração com H2 em memória, sem Docker | JUnit Jupiter 6.0.3 · Mockito 5.23.0 · AssertJ 3.27.7 (versões gerenciadas pelo Spring Boot 4.1.1) |
+| Front-end | React + TypeScript + Vite (criado com `create-vite` 9.3.4, template `react-ts`) + Axios; Material UI (MUI), React Hook Form e Zod a partir da aula 10 | React 19.3.1 · TypeScript 7.0.2 · Vite 8.3.8 · Axios 1.21.1 · MUI 9.5.0 (`@mui/material`, com `@emotion/react` 11.14.0 e `@emotion/styled` 11.14.1) · React Hook Form 7.92.0 (com `@hookform/resolvers` 7.0.6) · Zod 4.6.7 |
+| Ferramentas do front-end | Node.js + npm; lint com Oxlint (padrão do template) | Node.js 26.13.1 (LTS, já instalado no laboratório) · npm 11.20.0 · Oxlint 1.93.0. Versões exatas no `frontend/package-lock.json` |
 
 > As versões são registradas no início do semestre e só mudam com decisão da equipe documentada.
 
 ## 🚀 Como executar
-**Pré-requisitos:** JDK 21 ou superior. Não é preciso instalar o Maven: o `./mvnw` baixa a versão certa. Node.js e Docker entram nas próximas etapas.
+**Pré-requisitos:**
+- JDK 21 ou superior. Não é preciso instalar o Maven: o `./mvnw` baixa a versão certa.
+- Node.js 20.19+ ou 22.12+ (o Vite 8 recusa versões mais antigas), com o npm que vem junto.
+- Docker entra nas próximas etapas.
 
-**Pré-requisitos:** [JDK LTS, Maven Wrapper, Node.js, Docker…]
-
+### Back-end (a partir da aula 03)
 ```bash
-# Back-end (a partir da aula 03)
 cd backend
 ./mvnw spring-boot:run
-
-# Testes do back-end (a partir da aula 07): unitários e de integração, sem Docker
-cd backend
-./mvnw test
-
-# Front-end (a partir da aula 09)
-cd frontend
-npm install
-npm run dev
+```
 
 Com o back-end rodando:
 - Swagger UI: http://localhost:8080/swagger-ui.html
 - OpenAPI (JSON): http://localhost:8080/api-docs
 - Console do H2: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:mem:socialconnectdb`, usuário `sa`, senha vazia)
+
+O H2 é em memória: os dados somem quando a API para.
+
+Testes do back-end (a partir da aula 07), unitários e de integração, sem Docker:
+```bash
+cd backend
+./mvnw test
 ```
+
+### Front-end (a partir da aula 09)
+Em outro terminal, com o back-end rodando:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Abra http://localhost:5173. A tela lista os beneficiários da API (`GET /api/v1/beneficiarios?page=0&size=10`) e, pelo botão **Novo beneficiário**, cadastra um novo (`POST /api/v1/beneficiarios`), com a validação do Zod antes do envio e os erros da API (400 e 409) embaixo de cada campo.
+
+Outros comandos, dentro de `frontend/`:
+```bash
+npm run build     # confere os tipos (tsc) e gera o build em frontend/dist
+npm run lint      # Oxlint
+npm run preview   # serve o build, também na porta 5173
+```
+
+O `npm run build` avisa que o pacote JavaScript passa de 500 kB (*Some chunks are larger than 500 kB*): é só um aviso, porque o React, o MUI, o Zod, o Axios e o React Hook Form vão juntos num arquivo só (cerca de 200 kB com gzip).
+
+O front precisa rodar em **http://localhost:5173**: é a única origem que o `CorsConfig` da API libera. Por isso o `vite.config.ts` fixa a porta (`strictPort`): se a 5173 estiver ocupada, o Vite para com erro em vez de subir em outra porta. Abrir pelo endereço `http://127.0.0.1:5173` também não funciona, porque é outra origem.
 
 ## 🌿 Fluxo de trabalho Git
 1. Toda tarefa nasce como **issue** vinculada ao backlog.
